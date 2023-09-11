@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2019 Intel Corporation
  */
@@ -2605,7 +2606,7 @@ ipn3ke_rpst_scan_check(void)
 		if (ret)
 			IPN3KE_AFU_PMD_ERR("Can't cancel the thread");
 
-		ret = pthread_join(ipn3ke_rpst_scan_thread, NULL);
+		ret = real_pthread_join(ipn3ke_rpst_scan_thread, NULL);
 		if (ret)
 			IPN3KE_AFU_PMD_ERR("Can't join the thread");
 

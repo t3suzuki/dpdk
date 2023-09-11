@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /*   SPDX-License-Identifier: BSD-3-Clause
  *   Copyright(c) 2018 Advanced Micro Devices, Inc. All rights reserved.
  *   Copyright(c) 2018 Synopsys, Inc. All rights reserved.
@@ -229,11 +230,11 @@ static int axgbe_i2c_xfer(struct axgbe_port *pdata, struct axgbe_i2c_op *op)
 	int ret;
 	uint64_t timeout;
 
-	pthread_mutex_lock(&pdata->i2c_mutex);
+	real_pthread_mutex_lock(&pdata->i2c_mutex);
 	ret = axgbe_i2c_disable(pdata);
 	if (ret) {
 		PMD_DRV_LOG(ERR, "failed to disable i2c master\n");
-		pthread_mutex_unlock(&pdata->i2c_mutex);
+		real_pthread_mutex_unlock(&pdata->i2c_mutex);
 		return ret;
 	}
 
@@ -250,7 +251,7 @@ static int axgbe_i2c_xfer(struct axgbe_port *pdata, struct axgbe_i2c_op *op)
 	ret = axgbe_i2c_enable(pdata);
 	if (ret) {
 		PMD_DRV_LOG(ERR, "failed to enable i2c master\n");
-		pthread_mutex_unlock(&pdata->i2c_mutex);
+		real_pthread_mutex_unlock(&pdata->i2c_mutex);
 		return ret;
 	}
 
@@ -284,7 +285,7 @@ success:
 	}
 
 unlock:
-	pthread_mutex_unlock(&pdata->i2c_mutex);
+	real_pthread_mutex_unlock(&pdata->i2c_mutex);
 	return ret;
 }
 

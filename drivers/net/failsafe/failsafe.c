@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright 2017 6WIND S.A.
  * Copyright 2017 Mellanox Technologies, Ltd
@@ -147,7 +148,7 @@ fs_mutex_init(struct fs_priv *priv)
 		ERROR("Cannot set mutex type - %s", strerror(ret));
 		return ret;
 	}
-	ret = pthread_mutex_init(&priv->hotplug_mutex, &attr);
+	ret = real_pthread_mutex_init(&priv->hotplug_mutex, &attr);
 	if (ret) {
 		ERROR("Cannot initiate mutex - %s", strerror(ret));
 		return ret;

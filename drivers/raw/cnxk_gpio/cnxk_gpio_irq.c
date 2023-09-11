@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(C) 2021 Marvell.
  */
@@ -138,7 +139,7 @@ cnxk_gpio_irq_init(struct cnxk_gpiochip *gpiochip)
 		return -errno;
 	}
 
-	pthread_mutex_init(&irqchip->lock, NULL);
+	real_pthread_mutex_init(&irqchip->lock, NULL);
 	LIST_INIT(&irqchip->stacks);
 	irqchip->gpiochip = gpiochip;
 
@@ -163,7 +164,7 @@ cnxk_gpio_irq_request(int gpio, int cpu)
 	void *sp;
 	int ret;
 
-	pthread_mutex_lock(&irqchip->lock);
+	real_pthread_mutex_lock(&irqchip->lock);
 
 	sp = cnxk_gpio_irq_stack_alloc(cpu);
 	if (!sp) {
@@ -183,14 +184,14 @@ cnxk_gpio_irq_request(int gpio, int cpu)
 		goto out_free_stack;
 	}
 
-	pthread_mutex_unlock(&irqchip->lock);
+	real_pthread_mutex_unlock(&irqchip->lock);
 
 	return 0;
 
 out_free_stack:
 	cnxk_gpio_irq_stack_free(cpu);
 out_unlock:
-	pthread_mutex_unlock(&irqchip->lock);
+	real_pthread_mutex_unlock(&irqchip->lock);
 
 	return ret;
 }
@@ -200,17 +201,17 @@ cnxk_gpio_irq_free(int gpio)
 {
 	int ret;
 
-	pthread_mutex_lock(&irqchip->lock);
+	real_pthread_mutex_lock(&irqchip->lock);
 
 	ret = ioctl(irqchip->fd, OTX_IOC_CLR_GPIO_HANDLER, gpio);
 	if (ret) {
-		pthread_mutex_unlock(&irqchip->lock);
+		real_pthread_mutex_unlock(&irqchip->lock);
 		return -errno;
 	}
 
 	cnxk_gpio_irq_stack_free(irqchip->gpiochip->gpios[gpio]->cpu);
 
-	pthread_mutex_unlock(&irqchip->lock);
+	real_pthread_mutex_unlock(&irqchip->lock);
 
 	return 0;
 }

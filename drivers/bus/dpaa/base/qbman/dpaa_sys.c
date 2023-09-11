@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: (BSD-3-Clause OR GPL-2.0)
  *
  * Copyright 2013-2016 Freescale Semiconductor Inc.
@@ -24,10 +25,10 @@ static void process_interrupt_install(struct process_interrupt *irq)
 {
 	int ret;
 	/* Add the irq to the end of the list */
-	ret = pthread_mutex_lock(&process_irq_lock);
+	ret = real_pthread_mutex_lock(&process_irq_lock);
 	assert(!ret);
 	list_add_tail(&irq->node, &process_irq_list);
-	ret = pthread_mutex_unlock(&process_irq_lock);
+	ret = real_pthread_mutex_unlock(&process_irq_lock);
 	assert(!ret);
 }
 
@@ -35,10 +36,10 @@ static void process_interrupt_remove(struct process_interrupt *irq)
 {
 	int ret;
 
-	ret = pthread_mutex_lock(&process_irq_lock);
+	ret = real_pthread_mutex_lock(&process_irq_lock);
 	assert(!ret);
 	list_del(&irq->node);
-	ret = pthread_mutex_unlock(&process_irq_lock);
+	ret = real_pthread_mutex_unlock(&process_irq_lock);
 	assert(!ret);
 }
 
@@ -47,14 +48,14 @@ static struct process_interrupt *process_interrupt_find(int irq_num)
 	int ret;
 	struct process_interrupt *i = NULL;
 
-	ret = pthread_mutex_lock(&process_irq_lock);
+	ret = real_pthread_mutex_lock(&process_irq_lock);
 	assert(!ret);
 	list_for_each_entry(i, &process_irq_list, node) {
 		if (i->irq == irq_num)
 			goto done;
 	}
 done:
-	ret = pthread_mutex_unlock(&process_irq_lock);
+	ret = real_pthread_mutex_unlock(&process_irq_lock);
 	assert(!ret);
 	return i;
 }

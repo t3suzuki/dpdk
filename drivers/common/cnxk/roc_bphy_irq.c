@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(C) 2021 Marvell.
  */
@@ -126,7 +127,7 @@ roc_bphy_irq_stack_remove(int cpu)
 {
 	struct roc_bphy_irq_stack *curr_stack;
 
-	if (pthread_mutex_lock(&stacks_mutex))
+	if (real_pthread_mutex_lock(&stacks_mutex))
 		return;
 
 	STAILQ_FOREACH(curr_stack, &irq_stacks, entries) {
@@ -148,7 +149,7 @@ roc_bphy_irq_stack_remove(int cpu)
 	}
 
 leave:
-	pthread_mutex_unlock(&stacks_mutex);
+	real_pthread_mutex_unlock(&stacks_mutex);
 }
 
 static void *
@@ -160,7 +161,7 @@ roc_bphy_irq_stack_get(int cpu)
 	struct roc_bphy_irq_stack *curr_stack;
 	void *retval = NULL;
 
-	if (pthread_mutex_lock(&stacks_mutex))
+	if (real_pthread_mutex_lock(&stacks_mutex))
 		return NULL;
 
 	STAILQ_FOREACH(curr_stack, &irq_stacks, entries) {
@@ -187,14 +188,14 @@ roc_bphy_irq_stack_get(int cpu)
 	retval = ((char *)curr_stack->sp_buffer) + IRQ_ISR_STACK_SIZE;
 
 found_stack:
-	pthread_mutex_unlock(&stacks_mutex);
+	real_pthread_mutex_unlock(&stacks_mutex);
 	return retval;
 
 err_buffer:
 	plt_free(curr_stack);
 
 err_stack:
-	pthread_mutex_unlock(&stacks_mutex);
+	real_pthread_mutex_unlock(&stacks_mutex);
 	return NULL;
 }
 

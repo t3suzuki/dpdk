@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright 2020 Mellanox Technologies, Ltd
  */
@@ -895,7 +896,7 @@ mlx5_txpp_start(struct rte_eth_dev *dev)
 			return 0;
 		err = 0;
 	}
-	claim_zero(pthread_mutex_lock(&sh->txpp.mutex));
+	claim_zero(real_pthread_mutex_lock(&sh->txpp.mutex));
 	if (sh->txpp.refcnt) {
 		priv->txpp_en = 1;
 		++sh->txpp.refcnt;
@@ -909,7 +910,7 @@ mlx5_txpp_start(struct rte_eth_dev *dev)
 			rte_errno = -err;
 		}
 	}
-	claim_zero(pthread_mutex_unlock(&sh->txpp.mutex));
+	claim_zero(real_pthread_mutex_unlock(&sh->txpp.mutex));
 	return err;
 }
 
@@ -933,15 +934,15 @@ mlx5_txpp_stop(struct rte_eth_dev *dev)
 		return;
 	}
 	priv->txpp_en = 0;
-	claim_zero(pthread_mutex_lock(&sh->txpp.mutex));
+	claim_zero(real_pthread_mutex_lock(&sh->txpp.mutex));
 	MLX5_ASSERT(sh->txpp.refcnt);
 	if (!sh->txpp.refcnt || --sh->txpp.refcnt) {
-		claim_zero(pthread_mutex_unlock(&sh->txpp.mutex));
+		claim_zero(real_pthread_mutex_unlock(&sh->txpp.mutex));
 		return;
 	}
 	/* No references any more, do actual destroy. */
 	mlx5_txpp_destroy(sh);
-	claim_zero(pthread_mutex_unlock(&sh->txpp.mutex));
+	claim_zero(real_pthread_mutex_unlock(&sh->txpp.mutex));
 }
 
 /*

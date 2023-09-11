@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2016-2020 Intel Corporation
  */
@@ -859,14 +860,14 @@ dlb2_get_pp_allocation(struct dlb2_hw *hw, int cpu, int port_type)
 		dlb2_thread_data[i].hw = hw;
 		dlb2_thread_data[i].cpu = cpu;
 
-		err = pthread_create(&pthread, NULL, &dlb2_pp_profile_func,
+		err = real_pthread_create(&pthread, NULL, &dlb2_pp_profile_func,
 				     &dlb2_thread_data[i]);
 		if (err) {
 			DLB2_LOG_ERR(": thread creation failed! err=%d", err);
 			return;
 		}
 
-		err = pthread_join(pthread, NULL);
+		err = real_pthread_join(pthread, NULL);
 		if (err) {
 			DLB2_LOG_ERR(": thread join failed! err=%d", err);
 			return;

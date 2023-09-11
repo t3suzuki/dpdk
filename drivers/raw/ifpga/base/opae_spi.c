@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2010-2019 Intel Corporation
  */
@@ -298,14 +299,14 @@ void altera_spi_init(struct altera_spi_device *spi_dev)
 			spi_dev->spi_param.clock_phase);
 
 	if (spi_dev->mutex)
-		pthread_mutex_lock(spi_dev->mutex);
+		real_pthread_mutex_lock(spi_dev->mutex);
 	/* clear */
 	spi_reg_write(spi_dev, ALTERA_SPI_CONTROL, 0);
 	spi_reg_write(spi_dev, ALTERA_SPI_STATUS, 0);
 	/* flush rxdata */
 	spi_flush_rx(spi_dev);
 	if (spi_dev->mutex)
-		pthread_mutex_unlock(spi_dev->mutex);
+		real_pthread_mutex_unlock(spi_dev->mutex);
 }
 
 void altera_spi_release(struct altera_spi_device *dev)

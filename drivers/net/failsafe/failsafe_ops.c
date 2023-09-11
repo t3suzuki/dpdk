@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright 2017 6WIND S.A.
  * Copyright 2017 Mellanox Technologies, Ltd
@@ -678,7 +679,7 @@ failsafe_eth_dev_close(struct rte_eth_dev *dev)
 	/* mac_addrs must not be freed alone because part of dev_private */
 	dev->data->mac_addrs = NULL;
 	fs_unlock(dev, 0);
-	err = pthread_mutex_destroy(&PRIV(dev)->hotplug_mutex);
+	err = real_pthread_mutex_destroy(&PRIV(dev)->hotplug_mutex);
 	if (err) {
 		ret = ret ? ret : err;
 		ERROR("Error while destroying hotplug mutex");

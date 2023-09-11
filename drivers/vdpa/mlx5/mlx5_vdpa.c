@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright 2019 Mellanox Technologies, Ltd
  */
@@ -61,14 +62,14 @@ mlx5_vdpa_find_priv_resource_by_vdev(struct rte_vdpa_device *vdev)
 	struct mlx5_vdpa_priv *priv;
 	int found = 0;
 
-	pthread_mutex_lock(&priv_list_lock);
+	real_pthread_mutex_lock(&priv_list_lock);
 	TAILQ_FOREACH(priv, &priv_list, next) {
 		if (vdev == priv->vdev) {
 			found = 1;
 			break;
 		}
 	}
-	pthread_mutex_unlock(&priv_list_lock);
+	real_pthread_mutex_unlock(&priv_list_lock);
 	if (!found) {
 		DRV_LOG(ERR, "Invalid vDPA device: %s.", vdev->device->name);
 		rte_errno = EINVAL;
@@ -150,9 +151,9 @@ mlx5_vdpa_set_vring_state(int vid, int vring, int state)
 		return -E2BIG;
 	}
 	virtq = &priv->virtqs[vring];
-	pthread_mutex_lock(&virtq->virtq_lock);
+	real_pthread_mutex_lock(&virtq->virtq_lock);
 	ret = mlx5_vdpa_virtq_enable(priv, vring, state);
-	pthread_mutex_unlock(&virtq->virtq_lock);
+	real_pthread_mutex_unlock(&virtq->virtq_lock);
 	return ret;
 }
 
@@ -308,9 +309,9 @@ _internal_mlx5_vdpa_dev_close(struct mlx5_vdpa_priv *priv,
 		return ret;
 	}
 single_thrd:
-	pthread_mutex_lock(&priv->steer_update_lock);
+	real_pthread_mutex_lock(&priv->steer_update_lock);
 	mlx5_vdpa_steer_unset(priv);
-	pthread_mutex_unlock(&priv->steer_update_lock);
+	real_pthread_mutex_unlock(&priv->steer_update_lock);
 	mlx5_vdpa_virtqs_release(priv, release_resource);
 	mlx5_vdpa_drain_cq(priv);
 	if (priv->lm_mr.addr)
@@ -653,9 +654,9 @@ mlx5_vdpa_prepare_virtq_destroy(struct mlx5_vdpa_priv *priv)
 	for (index = 0; index < max_queues; ++index) {
 		virtq = &priv->virtqs[index];
 		if (virtq->virtq) {
-			pthread_mutex_lock(&virtq->virtq_lock);
+			real_pthread_mutex_lock(&virtq->virtq_lock);
 			mlx5_vdpa_virtq_unset(virtq);
-			pthread_mutex_unlock(&virtq->virtq_lock);
+			real_pthread_mutex_unlock(&virtq->virtq_lock);
 		}
 	}
 }
@@ -670,7 +671,7 @@ mlx5_vdpa_virtq_resource_prepare(struct mlx5_vdpa_priv *priv)
 	for (index = 0; index < priv->caps.max_num_virtio_queues;
 		index++) {
 		virtq = &priv->virtqs[index];
-		pthread_mutex_init(&virtq->virtq_lock, NULL);
+		real_pthread_mutex_init(&virtq->virtq_lock, NULL);
 	}
 	if (!priv->queues || !priv->queue_size)
 		return 0;
@@ -839,7 +840,7 @@ mlx5_vdpa_dev_probe(struct mlx5_common_device *cdev,
 	if (attr->num_lag_ports == 0)
 		priv->num_lag_ports = 1;
 	rte_spinlock_init(&priv->db_lock);
-	pthread_mutex_init(&priv->steer_update_lock, NULL);
+	real_pthread_mutex_init(&priv->steer_update_lock, NULL);
 	priv->cdev = cdev;
 	mlx5_vdpa_config_get(mkvlist, priv);
 	if (priv->use_c_thread) {
@@ -857,9 +858,9 @@ mlx5_vdpa_dev_probe(struct mlx5_common_device *cdev,
 		rte_errno = rte_errno ? rte_errno : EINVAL;
 		goto error;
 	}
-	pthread_mutex_lock(&priv_list_lock);
+	real_pthread_mutex_lock(&priv_list_lock);
 	TAILQ_INSERT_TAIL(&priv_list, priv, next);
-	pthread_mutex_unlock(&priv_list_lock);
+	real_pthread_mutex_unlock(&priv_list_lock);
 	return 0;
 error:
 	if (conf_thread_mng.initializer_priv == priv)
@@ -875,7 +876,7 @@ mlx5_vdpa_dev_remove(struct mlx5_common_device *cdev)
 	struct mlx5_vdpa_priv *priv = NULL;
 	int found = 0;
 
-	pthread_mutex_lock(&priv_list_lock);
+	real_pthread_mutex_lock(&priv_list_lock);
 	TAILQ_FOREACH(priv, &priv_list, next) {
 		if (priv->vdev->device == cdev->dev) {
 			found = 1;
@@ -884,7 +885,7 @@ mlx5_vdpa_dev_remove(struct mlx5_common_device *cdev)
 	}
 	if (found)
 		TAILQ_REMOVE(&priv_list, priv, next);
-	pthread_mutex_unlock(&priv_list_lock);
+	real_pthread_mutex_unlock(&priv_list_lock);
 	if (found)
 		mlx5_vdpa_dev_release(priv);
 	return 0;

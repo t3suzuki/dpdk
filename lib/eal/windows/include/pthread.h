@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2019 Intel Corporation
  */
@@ -129,7 +130,7 @@ close_handle:
 }
 
 static inline int
-pthread_create(void *threadid, const void *threadattr, void *threadfunc,
+real_pthread_create(void *threadid, const void *threadattr, void *threadfunc,
 		void *args)
 {
 	RTE_SET_USED(threadattr);
@@ -151,14 +152,14 @@ pthread_detach(__rte_unused pthread_t thread)
 }
 
 static inline int
-pthread_join(__rte_unused pthread_t thread,
+real_pthread_join(__rte_unused pthread_t thread,
 	__rte_unused void **value_ptr)
 {
 	return 0;
 }
 
 static inline int
-pthread_mutex_init(pthread_mutex_t *mutex,
+real_pthread_mutex_init(pthread_mutex_t *mutex,
 		   __rte_unused pthread_mutexattr_t *attr)
 {
 	InitializeCriticalSection(mutex);
@@ -166,21 +167,21 @@ pthread_mutex_init(pthread_mutex_t *mutex,
 }
 
 static inline int
-pthread_mutex_lock(pthread_mutex_t *mutex)
+real_pthread_mutex_lock(pthread_mutex_t *mutex)
 {
 	EnterCriticalSection(mutex);
 	return 0;
 }
 
 static inline int
-pthread_mutex_unlock(pthread_mutex_t *mutex)
+real_pthread_mutex_unlock(pthread_mutex_t *mutex)
 {
 	LeaveCriticalSection(mutex);
 	return 0;
 }
 
 static inline int
-pthread_mutex_destroy(pthread_mutex_t *mutex)
+real_pthread_mutex_destroy(pthread_mutex_t *mutex)
 {
 	DeleteCriticalSection(mutex);
 	return 0;

@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright 2019 Mellanox Technologies, Ltd
  */
@@ -27,16 +28,16 @@ mlx5_vdpa_logging_enable(struct mlx5_vdpa_priv *priv, int enable)
 		} else {
 			struct mlx5_vdpa_virtq *virtq = &priv->virtqs[i];
 
-			pthread_mutex_lock(&virtq->virtq_lock);
+			real_pthread_mutex_lock(&virtq->virtq_lock);
 			if (mlx5_devx_cmd_modify_virtq(priv->virtqs[i].virtq,
 			   &attr)) {
-				pthread_mutex_unlock(&virtq->virtq_lock);
+				real_pthread_mutex_unlock(&virtq->virtq_lock);
 				DRV_LOG(ERR,
 					"Failed to modify virtq %d for dirty bitmap enabling.",
 					i);
 				return -1;
 			}
-			pthread_mutex_unlock(&virtq->virtq_lock);
+			real_pthread_mutex_unlock(&virtq->virtq_lock);
 		}
 	}
 	return 0;
@@ -71,16 +72,16 @@ mlx5_vdpa_dirty_bitmap_set(struct mlx5_vdpa_priv *priv, uint64_t log_base,
 		} else {
 			struct mlx5_vdpa_virtq *virtq = &priv->virtqs[i];
 
-			pthread_mutex_lock(&virtq->virtq_lock);
+			real_pthread_mutex_lock(&virtq->virtq_lock);
 			if (mlx5_devx_cmd_modify_virtq(
 					priv->virtqs[i].virtq,
 					&attr)) {
-				pthread_mutex_unlock(&virtq->virtq_lock);
+				real_pthread_mutex_unlock(&virtq->virtq_lock);
 				DRV_LOG(ERR,
 				"Failed to modify virtq %d for LM.", i);
 				goto err;
 			}
-			pthread_mutex_unlock(&virtq->virtq_lock);
+			real_pthread_mutex_unlock(&virtq->virtq_lock);
 		}
 	}
 	return 0;
@@ -133,11 +134,11 @@ mlx5_vdpa_lm_log(struct mlx5_vdpa_priv *priv)
 		}
 		for (i = 0; i < task_num; i++) {
 			virtq = &priv->virtqs[main_task_idx[i]];
-			pthread_mutex_lock(&virtq->virtq_lock);
+			real_pthread_mutex_lock(&virtq->virtq_lock);
 			ret = mlx5_vdpa_virtq_stop(priv,
 					main_task_idx[i]);
 			if (ret) {
-				pthread_mutex_unlock(&virtq->virtq_lock);
+				real_pthread_mutex_unlock(&virtq->virtq_lock);
 				DRV_LOG(ERR,
 				"Failed to stop virtq %d.", i);
 				return -1;
@@ -145,7 +146,7 @@ mlx5_vdpa_lm_log(struct mlx5_vdpa_priv *priv)
 			if (RTE_VHOST_NEED_LOG(features))
 				rte_vhost_log_used_vring(priv->vid, i, 0,
 				MLX5_VDPA_USED_RING_LEN(virtq->vq_size));
-			pthread_mutex_unlock(&virtq->virtq_lock);
+			real_pthread_mutex_unlock(&virtq->virtq_lock);
 		}
 		if (mlx5_vdpa_c_thread_wait_bulk_tasks_done(&remaining_cnt,
 			&err_cnt, 2000)) {
@@ -156,14 +157,14 @@ mlx5_vdpa_lm_log(struct mlx5_vdpa_priv *priv)
 	} else {
 		for (i = 0; i < priv->nr_virtqs; i++) {
 			virtq = &priv->virtqs[i];
-			pthread_mutex_lock(&virtq->virtq_lock);
+			real_pthread_mutex_lock(&virtq->virtq_lock);
 			if (!virtq->configured) {
-				pthread_mutex_unlock(&virtq->virtq_lock);
+				real_pthread_mutex_unlock(&virtq->virtq_lock);
 				continue;
 			}
 			ret = mlx5_vdpa_virtq_stop(priv, i);
 			if (ret) {
-				pthread_mutex_unlock(&virtq->virtq_lock);
+				real_pthread_mutex_unlock(&virtq->virtq_lock);
 				DRV_LOG(ERR,
 				"Failed to stop virtq %d for LM log.", i);
 				return -1;
@@ -171,7 +172,7 @@ mlx5_vdpa_lm_log(struct mlx5_vdpa_priv *priv)
 			if (RTE_VHOST_NEED_LOG(features))
 				rte_vhost_log_used_vring(priv->vid, i, 0,
 				MLX5_VDPA_USED_RING_LEN(virtq->vq_size));
-			pthread_mutex_unlock(&virtq->virtq_lock);
+			real_pthread_mutex_unlock(&virtq->virtq_lock);
 		}
 	}
 	return 0;

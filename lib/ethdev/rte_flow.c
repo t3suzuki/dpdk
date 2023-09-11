@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright 2016 6WIND S.A.
  * Copyright 2016 Mellanox Technologies, Ltd
@@ -299,14 +300,14 @@ static inline void
 fts_enter(struct rte_eth_dev *dev)
 {
 	if (!(dev->data->dev_flags & RTE_ETH_DEV_FLOW_OPS_THREAD_SAFE))
-		pthread_mutex_lock(&dev->data->flow_ops_mutex);
+		real_pthread_mutex_lock(&dev->data->flow_ops_mutex);
 }
 
 static inline void
 fts_exit(struct rte_eth_dev *dev)
 {
 	if (!(dev->data->dev_flags & RTE_ETH_DEV_FLOW_OPS_THREAD_SAFE))
-		pthread_mutex_unlock(&dev->data->flow_ops_mutex);
+		real_pthread_mutex_unlock(&dev->data->flow_ops_mutex);
 }
 
 static int

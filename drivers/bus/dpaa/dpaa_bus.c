@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  *
  *   Copyright 2017-2020 NXP
@@ -365,10 +366,10 @@ int rte_dpaa_portal_init(void *arg)
 	DPAA_PER_LCORE_PORTAL->bman_idx = bman_get_portal_index();
 	DPAA_PER_LCORE_PORTAL->tid = rte_gettid();
 
-	ret = pthread_setspecific(dpaa_portal_key,
+	ret = real_pthread_setspecific(dpaa_portal_key,
 				  (void *)DPAA_PER_LCORE_PORTAL);
 	if (ret) {
-		DPAA_BUS_LOG(ERR, "pthread_setspecific failed on core %u"
+		DPAA_BUS_LOG(ERR, "real_pthread_setspecific failed on core %u"
 			     " (lcore=%u) with ret: %d", cpu, lcore, ret);
 		dpaa_portal_finish(NULL);
 
@@ -426,7 +427,7 @@ dpaa_portal_finish(void *arg)
 	bman_thread_finish();
 	qman_thread_finish();
 
-	pthread_setspecific(dpaa_portal_key, NULL);
+	real_pthread_setspecific(dpaa_portal_key, NULL);
 
 	rte_free(dpaa_io_portal);
 	dpaa_io_portal = NULL;
@@ -510,7 +511,7 @@ rte_dpaa_bus_scan(void)
 	/* create the key, supplying a function that'll be invoked
 	 * when a portal affined thread will be deleted.
 	 */
-	ret = pthread_key_create(&dpaa_portal_key, dpaa_portal_finish);
+	ret = real_pthread_key_create(&dpaa_portal_key, dpaa_portal_finish);
 	if (ret) {
 		DPAA_BUS_LOG(DEBUG, "Unable to create pthread key. (%d)", ret);
 		dpaa_clean_device_list();

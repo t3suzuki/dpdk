@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2010-2019 Intel Corporation
@@ -30,7 +31,7 @@ int i2c_read(struct altera_i2c_dev *dev, int flags, unsigned int slave_addr,
 	int i = 0;
 	int ret;
 
-	pthread_mutex_lock(dev->mutex);
+	real_pthread_mutex_lock(dev->mutex);
 
 	if (flags & I2C_FLAG_ADDR16)
 		msgbuf[i++] = offset >> 8;
@@ -60,7 +61,7 @@ int i2c_read(struct altera_i2c_dev *dev, int flags, unsigned int slave_addr,
 	ret = i2c_transfer(dev, msg, 2);
 
 exit:
-	pthread_mutex_unlock(dev->mutex);
+	real_pthread_mutex_unlock(dev->mutex);
 	return ret;
 }
 
@@ -72,7 +73,7 @@ int i2c_write(struct altera_i2c_dev *dev, int flags, unsigned int slave_addr,
 	int ret;
 	int i = 0;
 
-	pthread_mutex_lock(dev->mutex);
+	real_pthread_mutex_lock(dev->mutex);
 
 	if (!dev->xfer) {
 		ret = -ENODEV;
@@ -100,7 +101,7 @@ int i2c_write(struct altera_i2c_dev *dev, int flags, unsigned int slave_addr,
 
 	opae_free(buf);
 exit:
-	pthread_mutex_unlock(dev->mutex);
+	real_pthread_mutex_unlock(dev->mutex);
 	return ret;
 }
 
@@ -494,7 +495,7 @@ struct altera_i2c_dev *altera_i2c_probe(void *base)
 	dev->i2c_clk = dev->i2c_param.ref_clk * 1000000;
 	dev->xfer = altera_i2c_xfer;
 
-	if (pthread_mutex_init(&dev->lock, NULL))
+	if (real_pthread_mutex_init(&dev->lock, NULL))
 		return NULL;
 	dev->mutex = &dev->lock;
 
@@ -506,7 +507,7 @@ struct altera_i2c_dev *altera_i2c_probe(void *base)
 void altera_i2c_remove(struct altera_i2c_dev *dev)
 {
 	if (dev) {
-		pthread_mutex_destroy(&dev->lock);
+		real_pthread_mutex_destroy(&dev->lock);
 		altera_i2c_disable(dev);
 		opae_free(dev);
 	}

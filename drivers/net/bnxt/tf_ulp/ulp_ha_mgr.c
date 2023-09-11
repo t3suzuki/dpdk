@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2019-2021 Broadcom
  * All rights reserved.
@@ -328,7 +329,7 @@ ulp_ha_mgr_init(struct bnxt_ulp_context *ulp_ctx)
 	/* Add the HA info tbl to the ulp context. */
 	bnxt_ulp_cntxt_ptr2_ha_info_set(ulp_ctx, ha_info);
 
-	rc = pthread_mutex_init(&ha_info->ha_lock, NULL);
+	rc = real_pthread_mutex_init(&ha_info->ha_lock, NULL);
 	if (rc) {
 		PMD_DRV_LOG(ERR, "Failed to initialize ha mutex\n");
 		goto cleanup;
@@ -359,7 +360,7 @@ ulp_ha_mgr_deinit(struct bnxt_ulp_context *ulp_ctx)
 		return;
 	}
 
-	pthread_mutex_destroy(&ha_info->ha_lock);
+	real_pthread_mutex_destroy(&ha_info->ha_lock);
 	rte_free(ha_info);
 
 	bnxt_ulp_cntxt_ptr2_ha_info_set(ulp_ctx, NULL);

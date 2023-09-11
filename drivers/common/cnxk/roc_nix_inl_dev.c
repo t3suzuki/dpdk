@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(C) 2021 Marvell.
  */
@@ -1026,7 +1027,7 @@ roc_nix_inl_dev_fini(struct roc_nix_inl_dev *roc_inl_dev)
 
 	if (inl_dev->set_soft_exp_poll) {
 		soft_exp_poll_thread_exit = true;
-		pthread_join(inl_dev->soft_exp_poll_thread, NULL);
+		real_pthread_join(inl_dev->soft_exp_poll_thread, NULL);
 		plt_bitmap_free(inl_dev->soft_exp_ring_bmap);
 		plt_free(inl_dev->soft_exp_ring_bmap_mem);
 		plt_free(inl_dev->sa_soft_exp_ring);

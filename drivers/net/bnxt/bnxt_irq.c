@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2014-2021 Broadcom
  * All rights reserved.
@@ -33,15 +34,15 @@ void bnxt_int_handler(void *param)
 		return;
 
 	raw_cons = cpr->cp_raw_cons;
-	pthread_mutex_lock(&bp->def_cp_lock);
+	real_pthread_mutex_lock(&bp->def_cp_lock);
 	while (1) {
 		if (!cpr || !cpr->cp_ring_struct || !cpr->cp_db.doorbell) {
-			pthread_mutex_unlock(&bp->def_cp_lock);
+			real_pthread_mutex_unlock(&bp->def_cp_lock);
 			return;
 		}
 
 		if (is_bnxt_in_error(bp)) {
-			pthread_mutex_unlock(&bp->def_cp_lock);
+			real_pthread_mutex_unlock(&bp->def_cp_lock);
 			return;
 		}
 
@@ -62,7 +63,7 @@ void bnxt_int_handler(void *param)
 	else
 		B_CP_DB_REARM(cpr, cpr->cp_raw_cons);
 
-	pthread_mutex_unlock(&bp->def_cp_lock);
+	real_pthread_mutex_unlock(&bp->def_cp_lock);
 }
 
 int bnxt_free_int(struct bnxt *bp)

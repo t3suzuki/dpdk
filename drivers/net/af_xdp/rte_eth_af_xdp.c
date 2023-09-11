@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2019-2020 Intel Corporation.
  */
@@ -717,7 +718,7 @@ find_internal_resource(struct pmd_internals *port_int)
 	if (port_int == NULL)
 		return NULL;
 
-	pthread_mutex_lock(&internal_list_lock);
+	real_pthread_mutex_lock(&internal_list_lock);
 
 	TAILQ_FOREACH(list, &internal_list, next) {
 		struct pmd_internals *list_int =
@@ -728,7 +729,7 @@ find_internal_resource(struct pmd_internals *port_int)
 		}
 	}
 
-	pthread_mutex_unlock(&internal_list_lock);
+	real_pthread_mutex_unlock(&internal_list_lock);
 
 	if (!found)
 		return NULL;
@@ -760,9 +761,9 @@ eth_dev_configure(struct rte_eth_dev *dev)
 			return -1;
 
 		list->eth_dev = dev;
-		pthread_mutex_lock(&internal_list_lock);
+		real_pthread_mutex_lock(&internal_list_lock);
 		TAILQ_INSERT_TAIL(&internal_list, list, next);
-		pthread_mutex_unlock(&internal_list_lock);
+		real_pthread_mutex_unlock(&internal_list_lock);
 	}
 
 	return 0;
@@ -1005,9 +1006,9 @@ eth_dev_close(struct rte_eth_dev *dev)
 		/* Remove ethdev from list used to track and share UMEMs */
 		list = find_internal_resource(internals);
 		if (list) {
-			pthread_mutex_lock(&internal_list_lock);
+			real_pthread_mutex_lock(&internal_list_lock);
 			TAILQ_REMOVE(&internal_list, list, next);
-			pthread_mutex_unlock(&internal_list_lock);
+			real_pthread_mutex_unlock(&internal_list_lock);
 			rte_free(list);
 		}
 	}
@@ -1069,7 +1070,7 @@ get_shared_umem(struct pkt_rx_queue *rxq, const char *ifname,
 	if (mb_pool == NULL)
 		return ret;
 
-	pthread_mutex_lock(&internal_list_lock);
+	real_pthread_mutex_lock(&internal_list_lock);
 
 	TAILQ_FOREACH(list, &internal_list, next) {
 		internals = list->eth_dev->data->dev_private;
@@ -1094,7 +1095,7 @@ get_shared_umem(struct pkt_rx_queue *rxq, const char *ifname,
 	}
 
 out:
-	pthread_mutex_unlock(&internal_list_lock);
+	real_pthread_mutex_unlock(&internal_list_lock);
 
 	return ret;
 }

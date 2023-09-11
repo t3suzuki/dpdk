@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2014-2021 Broadcom
  * All rights reserved.
@@ -124,7 +125,7 @@ bnxt_rep_tx_burst(void *tx_queue,
 	qid = vfr_txq->txq->queue_id;
 	vf_rep_bp = vfr_txq->bp;
 	parent = vf_rep_bp->parent_dev->data->dev_private;
-	pthread_mutex_lock(&parent->rep_info->vfr_lock);
+	real_pthread_mutex_lock(&parent->rep_info->vfr_lock);
 	ptxq = parent->tx_queues[qid];
 
 	ptxq->vfr_tx_cfa_action = vf_rep_bp->vfr_tx_cfa_action;
@@ -136,7 +137,7 @@ bnxt_rep_tx_burst(void *tx_queue,
 
 	rc = bnxt_xmit_pkts(ptxq, tx_pkts, nb_pkts);
 	ptxq->vfr_tx_cfa_action = 0;
-	pthread_mutex_unlock(&parent->rep_info->vfr_lock);
+	real_pthread_mutex_unlock(&parent->rep_info->vfr_lock);
 
 	return rc;
 }
@@ -437,15 +438,15 @@ int bnxt_rep_dev_start_op(struct rte_eth_dev *eth_dev)
 	rep_info = &parent_bp->rep_info[rep_bp->vf_id];
 
 	BNXT_TF_DBG(DEBUG, "BNXT Port:%d VFR start\n", eth_dev->data->port_id);
-	pthread_mutex_lock(&rep_info->vfr_start_lock);
+	real_pthread_mutex_lock(&rep_info->vfr_start_lock);
 	if (!rep_info->conduit_valid) {
 		rc = bnxt_get_dflt_vnic_svif(parent_bp, rep_bp);
 		if (rc || !rep_info->conduit_valid) {
-			pthread_mutex_unlock(&rep_info->vfr_start_lock);
+			real_pthread_mutex_unlock(&rep_info->vfr_start_lock);
 			return rc;
 		}
 	}
-	pthread_mutex_unlock(&rep_info->vfr_start_lock);
+	real_pthread_mutex_unlock(&rep_info->vfr_start_lock);
 
 	rc = bnxt_vfr_alloc(eth_dev);
 	if (rc) {

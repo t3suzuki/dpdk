@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2010-2014 Intel Corporation
  */
@@ -1193,11 +1194,11 @@ test_bonding_lsc_event_callback(uint16_t port_id __rte_unused,
 		void *param __rte_unused,
 		void *ret_param __rte_unused)
 {
-	pthread_mutex_lock(&mutex);
+	real_pthread_mutex_lock(&mutex);
 	test_lsc_interrupt_count++;
 
-	pthread_cond_signal(&cvar);
-	pthread_mutex_unlock(&mutex);
+	real_pthread_cond_signal(&cvar);
+	real_pthread_mutex_unlock(&mutex);
 
 	return 0;
 }
@@ -1222,11 +1223,11 @@ lsc_timeout(int wait_us)
 		ts.tv_sec += 1;
 	}
 
-	pthread_mutex_lock(&mutex);
+	real_pthread_mutex_lock(&mutex);
 	if (test_lsc_interrupt_count < 1)
-		retval = pthread_cond_timedwait(&cvar, &mutex, &ts);
+		retval = real_pthread_cond_timedwait(&cvar, &mutex, &ts);
 
-	pthread_mutex_unlock(&mutex);
+	real_pthread_mutex_unlock(&mutex);
 
 	if (retval == 0 && test_lsc_interrupt_count < 1)
 		return -1;

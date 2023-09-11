@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2018 Intel Corporation
  */
@@ -103,7 +104,7 @@ find_internal_resource_by_vdev(struct rte_vdpa_device *vdev)
 	int found = 0;
 	struct internal_list *list;
 
-	pthread_mutex_lock(&internal_list_lock);
+	real_pthread_mutex_lock(&internal_list_lock);
 
 	TAILQ_FOREACH(list, &internal_list, next) {
 		if (vdev == list->internal->vdev) {
@@ -112,7 +113,7 @@ find_internal_resource_by_vdev(struct rte_vdpa_device *vdev)
 		}
 	}
 
-	pthread_mutex_unlock(&internal_list_lock);
+	real_pthread_mutex_unlock(&internal_list_lock);
 
 	if (!found)
 		return NULL;
@@ -126,7 +127,7 @@ find_internal_resource_by_pci_dev(struct rte_pci_device *pdev)
 	int found = 0;
 	struct internal_list *list;
 
-	pthread_mutex_lock(&internal_list_lock);
+	real_pthread_mutex_lock(&internal_list_lock);
 
 	TAILQ_FOREACH(list, &internal_list, next) {
 		if (!rte_pci_addr_cmp(&pdev->addr,
@@ -136,7 +137,7 @@ find_internal_resource_by_pci_dev(struct rte_pci_device *pdev)
 		}
 	}
 
-	pthread_mutex_unlock(&internal_list_lock);
+	real_pthread_mutex_unlock(&internal_list_lock);
 
 	if (!found)
 		return NULL;
@@ -150,7 +151,7 @@ find_internal_resource_by_rte_dev(struct rte_device *rte_dev)
 	int found = 0;
 	struct internal_list *list;
 
-	pthread_mutex_lock(&internal_list_lock);
+	real_pthread_mutex_lock(&internal_list_lock);
 
 	TAILQ_FOREACH(list, &internal_list, next) {
 		if (rte_dev == &list->internal->pdev->device) {
@@ -159,7 +160,7 @@ find_internal_resource_by_rte_dev(struct rte_device *rte_dev)
 		}
 	}
 
-	pthread_mutex_unlock(&internal_list_lock);
+	real_pthread_mutex_unlock(&internal_list_lock);
 
 	if (!found)
 		return NULL;
@@ -588,7 +589,7 @@ unset_notify_relay(struct ifcvf_internal *internal)
 
 	if (internal->tid) {
 		pthread_cancel(internal->tid);
-		pthread_join(internal->tid, &status);
+		real_pthread_join(internal->tid, &status);
 	}
 	internal->tid = 0;
 
@@ -698,7 +699,7 @@ unset_intr_relay(struct ifcvf_internal *internal)
 
 	if (internal->intr_tid) {
 		pthread_cancel(internal->intr_tid);
-		pthread_join(internal->intr_tid, &status);
+		real_pthread_join(internal->intr_tid, &status);
 	}
 	internal->intr_tid = 0;
 
@@ -1037,7 +1038,7 @@ unset_vring_relay(struct ifcvf_internal *internal)
 
 	if (internal->tid) {
 		pthread_cancel(internal->tid);
-		pthread_join(internal->tid, &status);
+		real_pthread_join(internal->tid, &status);
 	}
 	internal->tid = 0;
 
@@ -1772,17 +1773,17 @@ ifcvf_pci_probe(struct rte_pci_driver *pci_drv __rte_unused,
 		goto error;
 	}
 
-	pthread_mutex_lock(&internal_list_lock);
+	real_pthread_mutex_lock(&internal_list_lock);
 	TAILQ_INSERT_TAIL(&internal_list, list, next);
-	pthread_mutex_unlock(&internal_list_lock);
+	real_pthread_mutex_unlock(&internal_list_lock);
 
 	internal->vdev = rte_vdpa_register_device(&pci_dev->device,
 				dev_info[internal->hw.device_type].ops);
 	if (internal->vdev == NULL) {
 		DRV_LOG(ERR, "failed to register device %s", pci_dev->name);
-		pthread_mutex_lock(&internal_list_lock);
+		real_pthread_mutex_lock(&internal_list_lock);
 		TAILQ_REMOVE(&internal_list, list, next);
-		pthread_mutex_unlock(&internal_list_lock);
+		real_pthread_mutex_unlock(&internal_list_lock);
 		goto error;
 	}
 
@@ -1791,9 +1792,9 @@ ifcvf_pci_probe(struct rte_pci_driver *pci_drv __rte_unused,
 		DRV_LOG(ERR, "failed to update datapath %s", pci_dev->name);
 		rte_atomic32_set(&internal->started, 0);
 		rte_vdpa_unregister_device(internal->vdev);
-		pthread_mutex_lock(&internal_list_lock);
+		real_pthread_mutex_lock(&internal_list_lock);
 		TAILQ_REMOVE(&internal_list, list, next);
-		pthread_mutex_unlock(&internal_list_lock);
+		real_pthread_mutex_unlock(&internal_list_lock);
 		goto error;
 	}
 
@@ -1831,9 +1832,9 @@ ifcvf_pci_remove(struct rte_pci_device *pci_dev)
 	rte_vfio_container_destroy(internal->vfio_container_fd);
 	rte_vdpa_unregister_device(internal->vdev);
 
-	pthread_mutex_lock(&internal_list_lock);
+	real_pthread_mutex_lock(&internal_list_lock);
 	TAILQ_REMOVE(&internal_list, list, next);
-	pthread_mutex_unlock(&internal_list_lock);
+	real_pthread_mutex_unlock(&internal_list_lock);
 
 	rte_free(list);
 	rte_free(internal);

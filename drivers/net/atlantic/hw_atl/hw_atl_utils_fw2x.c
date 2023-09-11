@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 // SPDX-License-Identifier: (BSD-3-Clause OR GPL-2.0)
 /* Copyright (C) 2014-2017 aQuantia Corporation. */
 
@@ -218,7 +219,7 @@ int aq_fw2x_get_mac_permanent(struct aq_hw_s *self, u8 *mac)
 	u32 mac_addr[2] = { 0 };
 	u32 efuse_addr = aq_hw_read_reg(self, HW_ATL_FW2X_MPI_EFUSE_ADDR);
 
-	pthread_mutex_lock(&self->mbox_mutex);
+	real_pthread_mutex_lock(&self->mbox_mutex);
 
 	if (efuse_addr != 0) {
 		err = hw_atl_utils_fw_downld_dwords(self,
@@ -257,7 +258,7 @@ int aq_fw2x_get_mac_permanent(struct aq_hw_s *self, u8 *mac)
 	}
 
 exit:
-	pthread_mutex_unlock(&self->mbox_mutex);
+	real_pthread_mutex_unlock(&self->mbox_mutex);
 
 	return err;
 }
@@ -269,7 +270,7 @@ static int aq_fw2x_update_stats(struct aq_hw_s *self)
 	u32 orig_stats_val = mpi_opts & BIT(CAPS_HI_STATISTICS);
 
 
-	pthread_mutex_lock(&self->mbox_mutex);
+	real_pthread_mutex_lock(&self->mbox_mutex);
 
 	/* Toggle statistics bit for FW to update */
 	mpi_opts = mpi_opts ^ BIT(CAPS_HI_STATISTICS);
@@ -286,7 +287,7 @@ static int aq_fw2x_update_stats(struct aq_hw_s *self)
 	err = hw_atl_utils_update_stats(self);
 
 exit:
-	pthread_mutex_unlock(&self->mbox_mutex);
+	real_pthread_mutex_unlock(&self->mbox_mutex);
 
 	return err;
 
@@ -299,7 +300,7 @@ static int aq_fw2x_get_temp(struct aq_hw_s *self, int *temp)
 	u32 temp_val = mpi_opts & BIT(CAPS_HI_TEMPERATURE);
 	u32 temp_res;
 
-	pthread_mutex_lock(&self->mbox_mutex);
+	real_pthread_mutex_lock(&self->mbox_mutex);
 
 	/* Toggle statistics bit for FW to 0x36C.18 (CAPS_HI_TEMPERATURE) */
 	mpi_opts = mpi_opts ^ BIT(CAPS_HI_TEMPERATURE);
@@ -317,7 +318,7 @@ static int aq_fw2x_get_temp(struct aq_hw_s *self, int *temp)
 				sizeof(temp_res) / sizeof(u32));
 
 
-	pthread_mutex_unlock(&self->mbox_mutex);
+	real_pthread_mutex_unlock(&self->mbox_mutex);
 
 	if (err)
 		return err;
@@ -536,7 +537,7 @@ static int aq_fw2x_get_eeprom(struct aq_hw_s *self, int dev_addr,
 	if ((self->caps_lo & BIT(CAPS_LO_SMBUS_READ)) == 0)
 		return -EOPNOTSUPP;
 
-	pthread_mutex_lock(&self->mbox_mutex);
+	real_pthread_mutex_lock(&self->mbox_mutex);
 
 	request.msg_id = 0;
 	request.device_id = dev_addr;
@@ -605,7 +606,7 @@ static int aq_fw2x_get_eeprom(struct aq_hw_s *self, int dev_addr,
 	}
 
 exit:
-	pthread_mutex_unlock(&self->mbox_mutex);
+	real_pthread_mutex_unlock(&self->mbox_mutex);
 
 	return err;
 }
@@ -626,7 +627,7 @@ static int aq_fw2x_set_eeprom(struct aq_hw_s *self, int dev_addr,
 	request.address = offset;
 	request.length = len;
 
-	pthread_mutex_lock(&self->mbox_mutex);
+	real_pthread_mutex_lock(&self->mbox_mutex);
 
 	/* Write SMBUS request to cfg memory */
 	err = hw_atl_utils_fw_upload_dwords(self, self->rpc_addr,
@@ -694,7 +695,7 @@ static int aq_fw2x_set_eeprom(struct aq_hw_s *self, int dev_addr,
 	}
 
 exit:
-	pthread_mutex_unlock(&self->mbox_mutex);
+	real_pthread_mutex_unlock(&self->mbox_mutex);
 
 	return err;
 }
@@ -712,7 +713,7 @@ static int aq_fw2x_send_macsec_request(struct aq_hw_s *self,
 	if ((self->caps_lo & BIT(CAPS_LO_MACSEC)) == 0)
 		return -EOPNOTSUPP;
 
-	pthread_mutex_lock(&self->mbox_mutex);
+	real_pthread_mutex_lock(&self->mbox_mutex);
 
 	/* Write macsec request to cfg memory */
 	err = hw_atl_utils_fw_upload_dwords(self, self->rpc_addr,
@@ -742,7 +743,7 @@ static int aq_fw2x_send_macsec_request(struct aq_hw_s *self,
 		RTE_ALIGN(sizeof(*response) / sizeof(u32), sizeof(u32)));
 
 exit:
-	pthread_mutex_unlock(&self->mbox_mutex);
+	real_pthread_mutex_unlock(&self->mbox_mutex);
 
 	return err;
 }

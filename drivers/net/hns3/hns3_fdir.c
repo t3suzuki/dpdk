@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2018-2021 HiSilicon Limited.
  */
@@ -1081,7 +1082,7 @@ int hns3_restore_all_fdir_filter(struct hns3_adapter *hns)
 	 * hw->flows_lock to avoid deadlock.
 	 */
 	rte_spinlock_unlock(&hw->lock);
-	pthread_mutex_lock(&hw->flows_lock);
+	real_pthread_mutex_lock(&hw->flows_lock);
 	TAILQ_FOREACH(fdir_filter, &fdir_info->fdir_list, entries) {
 		ret = hns3_config_action(hw, &fdir_filter->fdir_conf);
 		if (!ret)
@@ -1092,7 +1093,7 @@ int hns3_restore_all_fdir_filter(struct hns3_adapter *hns)
 				break;
 		}
 	}
-	pthread_mutex_unlock(&hw->flows_lock);
+	real_pthread_mutex_unlock(&hw->flows_lock);
 	rte_spinlock_lock(&hw->lock);
 
 	if (err) {

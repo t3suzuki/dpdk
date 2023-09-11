@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright (c) 2016 - 2018 Cavium Inc.
  * All rights reserved.
@@ -153,9 +154,9 @@ void osal_dma_free_mem(struct ecore_dev *edev, dma_addr_t phys);
 /* Mutexes */
 
 typedef pthread_mutex_t osal_mutex_t;
-#define OSAL_MUTEX_RELEASE(lock) pthread_mutex_unlock(lock)
-#define OSAL_MUTEX_INIT(lock) pthread_mutex_init(lock, NULL)
-#define OSAL_MUTEX_ACQUIRE(lock) pthread_mutex_lock(lock)
+#define OSAL_MUTEX_RELEASE(lock) real_pthread_mutex_unlock(lock)
+#define OSAL_MUTEX_INIT(lock) real_pthread_mutex_init(lock, NULL)
+#define OSAL_MUTEX_ACQUIRE(lock) real_pthread_mutex_lock(lock)
 #define OSAL_MUTEX_ALLOC(hwfn, lock) nothing
 #define OSAL_MUTEX_DEALLOC(lock) nothing
 

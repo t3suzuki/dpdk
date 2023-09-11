@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2021 HiSilicon Limited
  */
@@ -155,7 +156,7 @@ skeldma_stop(struct rte_dma_dev *dev)
 	rte_delay_ms(1);
 
 	(void)pthread_cancel(hw->thread);
-	pthread_join(hw->thread, NULL);
+	real_pthread_join(hw->thread, NULL);
 
 	return 0;
 }

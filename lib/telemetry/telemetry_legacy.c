@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2020 Intel Corporation
  */
@@ -114,7 +115,7 @@ register_client(const char *cmd __rte_unused, const char *params,
 		close(fd);
 		return -1;
 	}
-	rc = pthread_create(&th, NULL, &legacy_client_handler,
+	rc = real_pthread_create(&th, NULL, &legacy_client_handler,
 				(void *)(uintptr_t)fd);
 	if (rc != 0) {
 		fprintf(stderr, "Failed to create legacy client thread: %s\n",

@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright (c) 2021 NVIDIA Corporation & Affiliates
  */
@@ -952,9 +953,9 @@ mlx5_crypto_dev_probe(struct mlx5_common_device *cdev,
 		(unsigned int)RTE_MIN(
 			MLX5_CRYPTO_KLM_SEGS_NUM(priv->umr_wqe_size),
 			(uint16_t)(priv->max_rdmar_ds - 2)));
-	pthread_mutex_lock(&priv_list_lock);
+	real_pthread_mutex_lock(&priv_list_lock);
 	TAILQ_INSERT_TAIL(&mlx5_crypto_priv_list, priv, next);
-	pthread_mutex_unlock(&priv_list_lock);
+	real_pthread_mutex_unlock(&priv_list_lock);
 
 	rte_cryptodev_pmd_probing_finish(crypto_dev);
 
@@ -966,13 +967,13 @@ mlx5_crypto_dev_remove(struct mlx5_common_device *cdev)
 {
 	struct mlx5_crypto_priv *priv = NULL;
 
-	pthread_mutex_lock(&priv_list_lock);
+	real_pthread_mutex_lock(&priv_list_lock);
 	TAILQ_FOREACH(priv, &mlx5_crypto_priv_list, next)
 		if (priv->crypto_dev->device == cdev->dev)
 			break;
 	if (priv)
 		TAILQ_REMOVE(&mlx5_crypto_priv_list, priv, next);
-	pthread_mutex_unlock(&priv_list_lock);
+	real_pthread_mutex_unlock(&priv_list_lock);
 	if (priv) {
 		claim_zero(mlx5_devx_cmd_destroy(priv->login_obj));
 		mlx5_devx_uar_release(&priv->uar);
@@ -1017,7 +1018,7 @@ static struct mlx5_class_driver mlx5_crypto_driver = {
 
 RTE_INIT(rte_mlx5_crypto_init)
 {
-	pthread_mutex_init(&priv_list_lock, NULL);
+	real_pthread_mutex_init(&priv_list_lock, NULL);
 	mlx5_common_init();
 	if (mlx5_glue != NULL)
 		mlx5_class_driver_register(&mlx5_crypto_driver);

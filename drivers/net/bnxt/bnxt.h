@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2014-2021 Broadcom
  * All rights reserved.
@@ -994,10 +995,10 @@ int bnxt_link_update_op(struct rte_eth_dev *eth_dev,
 extern const struct rte_flow_ops bnxt_flow_ops;
 
 #define bnxt_acquire_flow_lock(bp) \
-	pthread_mutex_lock(&(bp)->flow_lock)
+	real_pthread_mutex_lock(&(bp)->flow_lock)
 
 #define bnxt_release_flow_lock(bp) \
-	pthread_mutex_unlock(&(bp)->flow_lock)
+	real_pthread_mutex_unlock(&(bp)->flow_lock)
 
 #define BNXT_VALID_VNIC_OR_RET(bp, vnic_id) do { \
 	if ((vnic_id) >= (bp)->max_vnics) { \

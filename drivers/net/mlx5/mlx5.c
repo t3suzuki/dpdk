@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright 2015 6WIND S.A.
  * Copyright 2015 Mellanox Technologies, Ltd
@@ -1614,7 +1615,7 @@ mlx5_alloc_shared_dev_ctx(const struct mlx5_dev_spawn_data *spawn,
 	MLX5_ASSERT(spawn);
 	/* Secondary process should not create the shared context. */
 	MLX5_ASSERT(rte_eal_process_type() == RTE_PROC_PRIMARY);
-	pthread_mutex_lock(&mlx5_dev_ctx_list_mutex);
+	real_pthread_mutex_lock(&mlx5_dev_ctx_list_mutex);
 	/* Search for IB context by device name. */
 	LIST_FOREACH(sh, &mlx5_dev_ctx_list, next) {
 		if (!strcmp(sh->ibdev_name, spawn->phys_dev_name)) {
@@ -1633,7 +1634,7 @@ mlx5_alloc_shared_dev_ctx(const struct mlx5_dev_spawn_data *spawn,
 		rte_errno = ENOMEM;
 		goto exit;
 	}
-	pthread_mutex_init(&sh->txpp.mutex, NULL);
+	real_pthread_mutex_init(&sh->txpp.mutex, NULL);
 	sh->numa_node = spawn->cdev->dev->numa_node;
 	sh->cdev = spawn->cdev;
 	sh->esw_mode = !!(spawn->info.master || spawn->info.representor);
@@ -1705,12 +1706,12 @@ mlx5_alloc_shared_dev_ctx(const struct mlx5_dev_spawn_data *spawn,
 	LIST_INSERT_HEAD(&mlx5_dev_ctx_list, sh, next);
 	rte_spinlock_init(&sh->geneve_tlv_opt_sl);
 exit:
-	pthread_mutex_unlock(&mlx5_dev_ctx_list_mutex);
+	real_pthread_mutex_unlock(&mlx5_dev_ctx_list_mutex);
 	return sh;
 error:
 	err = rte_errno;
-	pthread_mutex_destroy(&sh->txpp.mutex);
-	pthread_mutex_unlock(&mlx5_dev_ctx_list_mutex);
+	real_pthread_mutex_destroy(&sh->txpp.mutex);
+	real_pthread_mutex_unlock(&mlx5_dev_ctx_list_mutex);
 	MLX5_ASSERT(sh);
 	mlx5_rxtx_uars_release(sh);
 	i = 0;
@@ -1741,7 +1742,7 @@ mlx5_lwm_setup(struct mlx5_priv *priv)
 {
 	int fd_lwm;
 
-	pthread_mutex_init(&priv->sh->lwm_config_lock, NULL);
+	real_pthread_mutex_init(&priv->sh->lwm_config_lock, NULL);
 	priv->sh->devx_channel_lwm = mlx5_os_devx_create_event_channel
 			(priv->sh->cdev->ctx,
 			 MLX5DV_DEVX_CREATE_EVENT_CHANNEL_FLAGS_OMIT_EV_DATA);
@@ -1760,7 +1761,7 @@ err:
 			(priv->sh->devx_channel_lwm);
 		priv->sh->devx_channel_lwm = NULL;
 	}
-	pthread_mutex_destroy(&priv->sh->lwm_config_lock);
+	real_pthread_mutex_destroy(&priv->sh->lwm_config_lock);
 	return -rte_errno;
 }
 
@@ -1785,7 +1786,7 @@ mlx5_lwm_unset(struct mlx5_dev_ctx_shared *sh)
 			(sh->devx_channel_lwm);
 		sh->devx_channel_lwm = NULL;
 	}
-	pthread_mutex_destroy(&sh->lwm_config_lock);
+	real_pthread_mutex_destroy(&sh->lwm_config_lock);
 }
 
 /**
@@ -1801,7 +1802,7 @@ mlx5_free_shared_dev_ctx(struct mlx5_dev_ctx_shared *sh)
 	int ret;
 	int i = 0;
 
-	pthread_mutex_lock(&mlx5_dev_ctx_list_mutex);
+	real_pthread_mutex_lock(&mlx5_dev_ctx_list_mutex);
 #ifdef RTE_LIBRTE_MLX5_DEBUG
 	/* Check the object presence in the list. */
 	struct mlx5_dev_ctx_shared *lctx;
@@ -1836,7 +1837,7 @@ mlx5_free_shared_dev_ctx(struct mlx5_dev_ctx_shared *sh)
 		mlx5_os_net_cleanup();
 		mlx5_flow_os_release_workspace();
 	}
-	pthread_mutex_unlock(&mlx5_dev_ctx_list_mutex);
+	real_pthread_mutex_unlock(&mlx5_dev_ctx_list_mutex);
 	if (sh->flex_parsers_dv) {
 		mlx5_list_destroy(sh->flex_parsers_dv);
 		sh->flex_parsers_dv = NULL;
@@ -1870,12 +1871,12 @@ mlx5_free_shared_dev_ctx(struct mlx5_dev_ctx_shared *sh)
 	else
 #endif
 		MLX5_ASSERT(sh->geneve_tlv_option_resource == NULL);
-	pthread_mutex_destroy(&sh->txpp.mutex);
+	real_pthread_mutex_destroy(&sh->txpp.mutex);
 	mlx5_lwm_unset(sh);
 	mlx5_free(sh);
 	return;
 exit:
-	pthread_mutex_unlock(&mlx5_dev_ctx_list_mutex);
+	real_pthread_mutex_unlock(&mlx5_dev_ctx_list_mutex);
 }
 
 /**
@@ -2814,12 +2815,12 @@ mlx5_probe_again_args_validate(struct mlx5_common_device *cdev,
 	/* Secondary process should not handle devargs. */
 	if (rte_eal_process_type() != RTE_PROC_PRIMARY)
 		return 0;
-	pthread_mutex_lock(&mlx5_dev_ctx_list_mutex);
+	real_pthread_mutex_lock(&mlx5_dev_ctx_list_mutex);
 	/* Search for IB context by common device pointer. */
 	LIST_FOREACH(sh, &mlx5_dev_ctx_list, next)
 		if (sh->cdev == cdev)
 			break;
-	pthread_mutex_unlock(&mlx5_dev_ctx_list_mutex);
+	real_pthread_mutex_unlock(&mlx5_dev_ctx_list_mutex);
 	/* There is sh for this device -> it isn't probe again. */
 	if (sh == NULL)
 		return 0;
@@ -3289,7 +3290,7 @@ RTE_LOG_REGISTER_DEFAULT(mlx5_logtype, NOTICE)
  */
 RTE_INIT(rte_mlx5_pmd_init)
 {
-	pthread_mutex_init(&mlx5_dev_ctx_list_mutex, NULL);
+	real_pthread_mutex_init(&mlx5_dev_ctx_list_mutex, NULL);
 	mlx5_common_init();
 	/* Build the static tables for Verbs conversion. */
 	mlx5_set_ptype_table();

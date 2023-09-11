@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2010-2019 Intel Corporation
  */
@@ -191,11 +192,11 @@ pmci_flash_bulk_write(struct intel_max10_device *dev, u32 addr,
 {
 	int ret;
 
-	pthread_mutex_lock(dev->bmc_ops.mutex);
+	real_pthread_mutex_lock(dev->bmc_ops.mutex);
 
 	ret = __pmci_flash_bulk_write(dev, addr, buf, size);
 
-	pthread_mutex_unlock(dev->bmc_ops.mutex);
+	real_pthread_mutex_unlock(dev->bmc_ops.mutex);
 	return ret;
 }
 
@@ -221,7 +222,7 @@ pmci_set_flash_host_mux(struct intel_max10_device *dev, bool request)
 static int
 pmci_get_mux(struct intel_max10_device *dev)
 {
-	pthread_mutex_lock(dev->bmc_ops.mutex);
+	real_pthread_mutex_lock(dev->bmc_ops.mutex);
 	return pmci_set_flash_host_mux(dev, true);
 }
 
@@ -231,7 +232,7 @@ pmci_put_mux(struct intel_max10_device *dev)
 	int ret;
 
 	ret = pmci_set_flash_host_mux(dev, false);
-	pthread_mutex_unlock(dev->bmc_ops.mutex);
+	real_pthread_mutex_unlock(dev->bmc_ops.mutex);
 	return ret;
 }
 
@@ -384,7 +385,7 @@ static int max10_indirect_reg_read(struct intel_max10_device *dev,
 	if (!dev)
 		return -ENODEV;
 
-	pthread_mutex_lock(dev->bmc_ops.mutex);
+	real_pthread_mutex_lock(dev->bmc_ops.mutex);
 
 	cmd = opae_readl(dev->mmio + INDIRECT_CMD_OFF);
 	if (cmd)
@@ -407,7 +408,7 @@ static int max10_indirect_reg_read(struct intel_max10_device *dev,
 	if (indirect_bus_clr_cmd(dev))
 		ret = -ETIME;
 
-	pthread_mutex_unlock(dev->bmc_ops.mutex);
+	real_pthread_mutex_unlock(dev->bmc_ops.mutex);
 
 	return ret;
 }
@@ -421,7 +422,7 @@ static int max10_indirect_reg_write(struct intel_max10_device *dev,
 	if (!dev)
 		return -ENODEV;
 
-	pthread_mutex_lock(dev->bmc_ops.mutex);
+	real_pthread_mutex_lock(dev->bmc_ops.mutex);
 
 	cmd = readl(dev->mmio + INDIRECT_CMD_OFF);
 
@@ -445,7 +446,7 @@ static int max10_indirect_reg_write(struct intel_max10_device *dev,
 	if (indirect_bus_clr_cmd(dev))
 		ret = -ETIME;
 
-	pthread_mutex_unlock(dev->bmc_ops.mutex);
+	real_pthread_mutex_unlock(dev->bmc_ops.mutex);
 
 	return ret;
 }
@@ -1479,7 +1480,7 @@ intel_max10_device_init(struct intel_max10_device *dev)
 		if (ret)
 			return ret;
 
-		ret = pthread_mutex_init(&dev->bmc_ops.lock, NULL);
+		ret = real_pthread_mutex_init(&dev->bmc_ops.lock, NULL);
 		if (ret)
 			return ret;
 
@@ -1495,7 +1496,7 @@ int intel_max10_device_remove(struct intel_max10_device *dev)
 	if (!dev)
 		return 0;
 
-	pthread_mutex_destroy(&dev->bmc_ops.lock);
+	real_pthread_mutex_destroy(&dev->bmc_ops.lock);
 
 	if (dev->type == M10_N3000) {
 		max10_sensor_uinit(dev);

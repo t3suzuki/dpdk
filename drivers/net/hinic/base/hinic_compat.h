@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2017 Huawei Technologies Co., Ltd
  */
@@ -205,7 +206,7 @@ static inline int hinic_mutex_init(pthread_mutex_t *pthreadmutex,
 {
 	int err;
 
-	err = pthread_mutex_init(pthreadmutex, mattr);
+	err = real_pthread_mutex_init(pthreadmutex, mattr);
 	if (unlikely(err))
 		PMD_DRV_LOG(ERR, "Fail to initialize mutex, error: %d", err);
 
@@ -216,7 +217,7 @@ static inline int hinic_mutex_destroy(pthread_mutex_t *pthreadmutex)
 {
 	int err;
 
-	err = pthread_mutex_destroy(pthreadmutex);
+	err = real_pthread_mutex_destroy(pthreadmutex);
 	if (unlikely(err))
 		PMD_DRV_LOG(ERR, "Fail to destroy mutex, error: %d", err);
 
@@ -240,7 +241,7 @@ static inline int hinic_mutex_lock(pthread_mutex_t *pthreadmutex)
 
 static inline int hinic_mutex_unlock(pthread_mutex_t *pthreadmutex)
 {
-	return pthread_mutex_unlock(pthreadmutex);
+	return real_pthread_mutex_unlock(pthreadmutex);
 }
 
 #endif /* _HINIC_COMPAT_H_ */

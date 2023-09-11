@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2010-2018 Intel Corporation
  */
@@ -318,7 +319,7 @@ static void opae_mutex_init(pthread_mutex_t *mutex)
 	pthread_mutexattr_setpshared(&mattr, PTHREAD_PROCESS_SHARED);
 	pthread_mutexattr_setrobust(&mattr, PTHREAD_MUTEX_ROBUST);
 	pthread_mutexattr_setprotocol(&mattr, PTHREAD_PRIO_INHERIT);
-	pthread_mutex_init(mutex, &mattr);
+	real_pthread_mutex_init(mutex, &mattr);
 	pthread_mutexattr_destroy(&mattr);
 }
 
@@ -429,9 +430,9 @@ int opae_adapter_lock(struct opae_adapter *adapter, int timeout)
 
 	if (adapter && adapter->lock) {
 		if (timeout < 0) {
-			ret = pthread_mutex_lock(adapter->lock);
+			ret = real_pthread_mutex_lock(adapter->lock);
 		} else if (timeout == 0) {
-			ret = pthread_mutex_trylock(adapter->lock);
+			ret = real_pthread_mutex_trylock(adapter->lock);
 		} else {
 			clock_gettime(CLOCK_REALTIME, &t);
 			t.tv_sec += timeout;
@@ -452,7 +453,7 @@ int opae_adapter_unlock(struct opae_adapter *adapter)
 	int ret = -EINVAL;
 
 	if (adapter && adapter->lock)
-		ret = pthread_mutex_unlock(adapter->lock);
+		ret = real_pthread_mutex_unlock(adapter->lock);
 
 	return ret;
 }

@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright 2019 Mellanox Technologies, Ltd
  */
@@ -640,14 +641,14 @@ mlx5_mr_mem_event_cb(enum rte_mem_event event_type, const void *addr,
 	MLX5_ASSERT(rte_eal_process_type() == RTE_PROC_PRIMARY);
 	switch (event_type) {
 	case RTE_MEM_EVENT_FREE:
-		pthread_mutex_lock(&devices_list_lock);
+		real_pthread_mutex_lock(&devices_list_lock);
 		/* Iterate all the existing mlx5 devices. */
 		TAILQ_FOREACH(cdev, &devices_list, next)
 			mlx5_free_mr_by_addr(&cdev->mr_scache,
 					     mlx5_os_get_ctx_device_name
 								    (cdev->ctx),
 					     addr, len);
-		pthread_mutex_unlock(&devices_list_lock);
+		real_pthread_mutex_unlock(&devices_list_lock);
 		break;
 	case RTE_MEM_EVENT_ALLOC:
 	default:
@@ -727,9 +728,9 @@ error:
 static void
 mlx5_common_dev_release(struct mlx5_common_device *cdev)
 {
-	pthread_mutex_lock(&devices_list_lock);
+	real_pthread_mutex_lock(&devices_list_lock);
 	TAILQ_REMOVE(&devices_list, cdev, next);
-	pthread_mutex_unlock(&devices_list_lock);
+	real_pthread_mutex_unlock(&devices_list_lock);
 	if (rte_eal_process_type() == RTE_PROC_PRIMARY) {
 		if (TAILQ_EMPTY(&devices_list))
 			rte_mem_event_callback_unregister("MLX5_MEM_EVENT_CB",
@@ -786,9 +787,9 @@ mlx5_common_dev_create(struct rte_device *eal_dev, uint32_t classes,
 		rte_mem_event_callback_register("MLX5_MEM_EVENT_CB",
 						mlx5_mr_mem_event_cb, NULL);
 exit:
-	pthread_mutex_lock(&devices_list_lock);
+	real_pthread_mutex_lock(&devices_list_lock);
 	TAILQ_INSERT_HEAD(&devices_list, cdev, next);
-	pthread_mutex_unlock(&devices_list_lock);
+	real_pthread_mutex_unlock(&devices_list_lock);
 	return cdev;
 }
 
@@ -1227,7 +1228,7 @@ mlx5_common_init(void)
 	if (mlx5_common_initialized)
 		return;
 
-	pthread_mutex_init(&devices_list_lock, NULL);
+	real_pthread_mutex_init(&devices_list_lock, NULL);
 	mlx5_glue_constructor();
 	mlx5_common_driver_init();
 	mlx5_common_initialized = true;

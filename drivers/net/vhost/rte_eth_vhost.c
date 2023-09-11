@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2016 IGEL Co., Ltd.
  * Copyright(c) 2016-2018 Intel Corporation
@@ -528,7 +529,7 @@ find_internal_resource(char *ifname)
 	if (ifname == NULL)
 		return NULL;
 
-	pthread_mutex_lock(&internal_list_lock);
+	real_pthread_mutex_lock(&internal_list_lock);
 
 	TAILQ_FOREACH(list, &internal_list, next) {
 		internal = list->eth_dev->data->dev_private;
@@ -538,7 +539,7 @@ find_internal_resource(char *ifname)
 		}
 	}
 
-	pthread_mutex_unlock(&internal_list_lock);
+	real_pthread_mutex_unlock(&internal_list_lock);
 
 	if (!found)
 		return NULL;
@@ -997,9 +998,9 @@ vhost_driver_setup(struct rte_eth_dev *eth_dev)
 		goto free_list;
 
 	list->eth_dev = eth_dev;
-	pthread_mutex_lock(&internal_list_lock);
+	real_pthread_mutex_lock(&internal_list_lock);
 	TAILQ_INSERT_TAIL(&internal_list, list, next);
-	pthread_mutex_unlock(&internal_list_lock);
+	real_pthread_mutex_unlock(&internal_list_lock);
 
 	rte_spinlock_init(&vring_state->lock);
 	vring_states[eth_dev->data->port_id] = vring_state;
@@ -1031,9 +1032,9 @@ drv_unreg:
 	rte_vhost_driver_unregister(internal->iface_name);
 list_remove:
 	vring_states[eth_dev->data->port_id] = NULL;
-	pthread_mutex_lock(&internal_list_lock);
+	real_pthread_mutex_lock(&internal_list_lock);
 	TAILQ_REMOVE(&internal_list, list, next);
-	pthread_mutex_unlock(&internal_list_lock);
+	real_pthread_mutex_unlock(&internal_list_lock);
 	rte_free(vring_state);
 free_list:
 	rte_free(list);
@@ -1089,7 +1090,7 @@ rte_eth_vhost_get_vid_from_port_id(uint16_t port_id)
 	if (!rte_eth_dev_is_valid_port(port_id))
 		return -1;
 
-	pthread_mutex_lock(&internal_list_lock);
+	real_pthread_mutex_lock(&internal_list_lock);
 
 	TAILQ_FOREACH(list, &internal_list, next) {
 		eth_dev = list->eth_dev;
@@ -1102,7 +1103,7 @@ rte_eth_vhost_get_vid_from_port_id(uint16_t port_id)
 		}
 	}
 
-	pthread_mutex_unlock(&internal_list_lock);
+	real_pthread_mutex_unlock(&internal_list_lock);
 
 	return vid;
 }
@@ -1181,9 +1182,9 @@ eth_dev_close(struct rte_eth_dev *dev)
 	list = find_internal_resource(internal->iface_name);
 	if (list) {
 		rte_vhost_driver_unregister(internal->iface_name);
-		pthread_mutex_lock(&internal_list_lock);
+		real_pthread_mutex_lock(&internal_list_lock);
 		TAILQ_REMOVE(&internal_list, list, next);
-		pthread_mutex_unlock(&internal_list_lock);
+		real_pthread_mutex_unlock(&internal_list_lock);
 		rte_free(list);
 	}
 

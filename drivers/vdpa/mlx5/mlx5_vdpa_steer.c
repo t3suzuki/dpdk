@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright 2019 Mellanox Technologies, Ltd
  */
@@ -244,22 +245,22 @@ mlx5_vdpa_steer_update(struct mlx5_vdpa_priv *priv, bool is_dummy)
 {
 	int ret;
 
-	pthread_mutex_lock(&priv->steer_update_lock);
+	real_pthread_mutex_lock(&priv->steer_update_lock);
 	ret = mlx5_vdpa_rqt_prepare(priv, is_dummy);
 	if (ret == 0) {
 		mlx5_vdpa_steer_unset(priv);
 	} else if (ret < 0) {
-		pthread_mutex_unlock(&priv->steer_update_lock);
+		real_pthread_mutex_unlock(&priv->steer_update_lock);
 		return ret;
 	} else if (!priv->steer.rss[0].flow) {
 		ret = mlx5_vdpa_rss_flows_create(priv);
 		if (ret) {
 			DRV_LOG(ERR, "Cannot create RSS flows.");
-			pthread_mutex_unlock(&priv->steer_update_lock);
+			real_pthread_mutex_unlock(&priv->steer_update_lock);
 			return -1;
 		}
 	}
-	pthread_mutex_unlock(&priv->steer_update_lock);
+	real_pthread_mutex_unlock(&priv->steer_update_lock);
 	return 0;
 }
 

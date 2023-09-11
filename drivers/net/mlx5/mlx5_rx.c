@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright 2021 6WIND S.A.
  * Copyright 2021 Mellanox Technologies, Ltd
@@ -1325,9 +1326,9 @@ mlx5_rx_queue_lwm_query(struct rte_eth_dev *dev,
 	for (rxq_id = *queue_id, n = 0; n < priv->rxqs_n; n++) {
 		rxq = mlx5_rxq_get(dev, rxq_id);
 		if (rxq && rxq->lwm_event_pending) {
-			pthread_mutex_lock(&priv->sh->lwm_config_lock);
+			real_pthread_mutex_lock(&priv->sh->lwm_config_lock);
 			rxq->lwm_event_pending = 0;
-			pthread_mutex_unlock(&priv->sh->lwm_config_lock);
+			real_pthread_mutex_unlock(&priv->sh->lwm_config_lock);
 			*queue_id = rxq_id;
 			found = 1;
 			if (lwm)
@@ -1365,9 +1366,9 @@ mlx5_dev_interrupt_handler_lwm(void *args)
 	dev = &rte_eth_devices[port_id];
 	rxq = mlx5_rxq_get(dev, rxq_idx);
 	if (rxq) {
-		pthread_mutex_lock(&priv->sh->lwm_config_lock);
+		real_pthread_mutex_lock(&priv->sh->lwm_config_lock);
 		rxq->lwm_event_pending = 1;
-		pthread_mutex_unlock(&priv->sh->lwm_config_lock);
+		real_pthread_mutex_unlock(&priv->sh->lwm_config_lock);
 	}
 	rte_eth_dev_callback_process(dev, RTE_ETH_EVENT_RX_AVAIL_THRESH, NULL);
 }
@@ -1424,7 +1425,7 @@ mlx5_rx_queue_lwm_set(struct rte_eth_dev *dev, uint16_t rx_queue_id,
 		return -rte_errno;
 	}
 	/* Start config LWM. */
-	pthread_mutex_lock(&priv->sh->lwm_config_lock);
+	real_pthread_mutex_lock(&priv->sh->lwm_config_lock);
 	if (rxq->lwm == 0 && lwm == 0) {
 		/* Both old/new values are 0, do nothing. */
 		ret = 0;
@@ -1476,7 +1477,7 @@ mlx5_rx_queue_lwm_set(struct rte_eth_dev *dev, uint16_t rx_queue_id,
 	}
 	ret = mlx5_devx_modify_rq(rxq, MLX5_RXQ_MOD_RDY2RDY);
 end:
-	pthread_mutex_unlock(&priv->sh->lwm_config_lock);
+	real_pthread_mutex_unlock(&priv->sh->lwm_config_lock);
 	return ret;
 }
 

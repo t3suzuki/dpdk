@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright 2021 Mellanox Technologies, Ltd
  * Copyright (C) 2022 Microsoft Corporation
@@ -100,11 +101,11 @@ thread_start_wrapper(void *arg)
 			RTE_LOG(DEBUG, EAL, "rte_thread_set_affinity_by_id failed\n");
 	}
 
-	pthread_mutex_lock(&ctx->wrapper_mutex);
+	real_pthread_mutex_lock(&ctx->wrapper_mutex);
 	ctx->wrapper_ret = ret;
 	ctx->wrapper_done = true;
-	pthread_cond_signal(&ctx->wrapper_cond);
-	pthread_mutex_unlock(&ctx->wrapper_mutex);
+	real_pthread_cond_signal(&ctx->wrapper_cond);
+	real_pthread_mutex_unlock(&ctx->wrapper_mutex);
 
 	if (ret != 0)
 		return NULL;
@@ -176,21 +177,21 @@ rte_thread_create(rte_thread_t *thread_id,
 		}
 	}
 
-	ret = pthread_create((pthread_t *)&thread_id->opaque_id, attrp,
+	ret = real_pthread_create((pthread_t *)&thread_id->opaque_id, attrp,
 		thread_start_wrapper, &ctx);
 	if (ret != 0) {
-		RTE_LOG(DEBUG, EAL, "pthread_create failed\n");
+		RTE_LOG(DEBUG, EAL, "real_pthread_create failed\n");
 		goto cleanup;
 	}
 
-	pthread_mutex_lock(&ctx.wrapper_mutex);
+	real_pthread_mutex_lock(&ctx.wrapper_mutex);
 	while (!ctx.wrapper_done)
-		pthread_cond_wait(&ctx.wrapper_cond, &ctx.wrapper_mutex);
+		real_pthread_cond_wait(&ctx.wrapper_cond, &ctx.wrapper_mutex);
 	ret = ctx.wrapper_ret;
-	pthread_mutex_unlock(&ctx.wrapper_mutex);
+	real_pthread_mutex_unlock(&ctx.wrapper_mutex);
 
 	if (ret != 0)
-		pthread_join((pthread_t)thread_id->opaque_id, NULL);
+		real_pthread_join((pthread_t)thread_id->opaque_id, NULL);
 
 cleanup:
 	if (attrp != NULL)
@@ -209,9 +210,9 @@ rte_thread_join(rte_thread_t thread_id, uint32_t *value_ptr)
 	if (value_ptr != NULL)
 		pres = &res;
 
-	ret = pthread_join((pthread_t)thread_id.opaque_id, pres);
+	ret = real_pthread_join((pthread_t)thread_id.opaque_id, pres);
 	if (ret != 0) {
-		RTE_LOG(DEBUG, EAL, "pthread_join failed\n");
+		RTE_LOG(DEBUG, EAL, "real_pthread_join failed\n");
 		return ret;
 	}
 
@@ -299,9 +300,9 @@ rte_thread_key_create(rte_thread_key *key, void (*destructor)(void *))
 		rte_errno = ENOMEM;
 		return -1;
 	}
-	err = pthread_key_create(&((*key)->thread_index), destructor);
+	err = real_pthread_key_create(&((*key)->thread_index), destructor);
 	if (err) {
-		RTE_LOG(DEBUG, EAL, "pthread_key_create failed: %s\n",
+		RTE_LOG(DEBUG, EAL, "real_pthread_key_create failed: %s\n",
 			strerror(err));
 		free(*key);
 		rte_errno = ENOEXEC;
@@ -320,9 +321,9 @@ rte_thread_key_delete(rte_thread_key key)
 		rte_errno = EINVAL;
 		return -1;
 	}
-	err = pthread_key_delete(key->thread_index);
+	err = real_pthread_key_delete(key->thread_index);
 	if (err) {
-		RTE_LOG(DEBUG, EAL, "pthread_key_delete failed: %s\n",
+		RTE_LOG(DEBUG, EAL, "real_pthread_key_delete failed: %s\n",
 			strerror(err));
 		free(key);
 		rte_errno = ENOEXEC;
@@ -342,9 +343,9 @@ rte_thread_value_set(rte_thread_key key, const void *value)
 		rte_errno = EINVAL;
 		return -1;
 	}
-	err = pthread_setspecific(key->thread_index, value);
+	err = real_pthread_setspecific(key->thread_index, value);
 	if (err) {
-		RTE_LOG(DEBUG, EAL, "pthread_setspecific failed: %s\n",
+		RTE_LOG(DEBUG, EAL, "real_pthread_setspecific failed: %s\n",
 			strerror(err));
 		rte_errno = ENOEXEC;
 		return -1;
@@ -360,7 +361,7 @@ rte_thread_value_get(rte_thread_key key)
 		rte_errno = EINVAL;
 		return NULL;
 	}
-	return pthread_getspecific(key->thread_index);
+	return real_pthread_getspecific(key->thread_index);
 }
 
 int

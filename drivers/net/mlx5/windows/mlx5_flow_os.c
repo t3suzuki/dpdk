@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright 2020 Mellanox Technologies, Ltd
  */
@@ -330,7 +331,7 @@ mlx5_flow_os_release_workspace(void)
 		free(first);
 	}
 	rte_thread_key_delete(ws_tls_index);
-	pthread_mutex_destroy(&lock_thread_list);
+	real_pthread_mutex_destroy(&lock_thread_list);
 }
 
 static int
@@ -352,7 +353,7 @@ mlx5_add_workspace_to_list(struct mlx5_flow_workspace *data)
 	}
 	temp->mlx5_ws = data;
 	temp->thread_handle = curr_thread;
-	pthread_mutex_lock(&lock_thread_list);
+	real_pthread_mutex_lock(&lock_thread_list);
 	mlx5_clear_thread_list();
 	if (!first) {
 		first = temp;
@@ -361,7 +362,7 @@ mlx5_add_workspace_to_list(struct mlx5_flow_workspace *data)
 		curr->next = temp;
 		curr = curr->next;
 	}
-	pthread_mutex_unlock(&lock_thread_list);
+	real_pthread_mutex_unlock(&lock_thread_list);
 	return 0;
 }
 
@@ -374,7 +375,7 @@ mlx5_flow_os_init_workspace_once(void)
 		DRV_LOG(ERR, "Can't create flow workspace data thread key.");
 		return -rte_errno;
 	}
-	pthread_mutex_init(&lock_thread_list, NULL);
+	real_pthread_mutex_init(&lock_thread_list, NULL);
 	return 0;
 }
 

@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2020-2021 Xilinx, Inc.
  */
@@ -603,7 +604,7 @@ sfc_vdpa_setup_notify_ctrl(struct sfc_vdpa_ops_data *ops_data)
 	 * dead lock scenario when multiple VFs are used in single vdpa
 	 * application and multiple VFs are passed to a single VM.
 	 */
-	ret = pthread_create(&ops_data->notify_tid, NULL,
+	ret = real_pthread_create(&ops_data->notify_tid, NULL,
 			     sfc_vdpa_notify_ctrl, ops_data);
 	if (ret != 0) {
 		sfc_vdpa_err(ops_data->dev_handle,
@@ -698,7 +699,7 @@ sfc_vdpa_dev_close(int vid)
 				     rte_strerror(ret));
 		}
 
-		ret = pthread_join(ops_data->notify_tid, &status);
+		ret = real_pthread_join(ops_data->notify_tid, &status);
 		if (ret != 0) {
 			sfc_vdpa_err(ops_data->dev_handle,
 				     "failed to join terminated notify_ctrl thread: %s",

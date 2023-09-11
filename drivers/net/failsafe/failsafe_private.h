@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright 2017 6WIND S.A.
  * Copyright 2017 Mellanox Technologies, Ltd
@@ -407,7 +408,7 @@ fs_lock(struct rte_eth_dev *dev, unsigned int is_alarm)
 	int ret;
 
 	if (is_alarm) {
-		ret = pthread_mutex_trylock(&PRIV(dev)->hotplug_mutex);
+		ret = real_pthread_mutex_trylock(&PRIV(dev)->hotplug_mutex);
 		if (ret) {
 			DEBUG("Hot-plug mutex lock trying failed(%s), will try"
 			      " again later...", strerror(ret));
@@ -415,7 +416,7 @@ fs_lock(struct rte_eth_dev *dev, unsigned int is_alarm)
 		}
 		PRIV(dev)->alarm_lock = 1;
 	} else {
-		ret = pthread_mutex_lock(&PRIV(dev)->hotplug_mutex);
+		ret = real_pthread_mutex_lock(&PRIV(dev)->hotplug_mutex);
 		if (ret) {
 			ERROR("Cannot lock mutex(%s)", strerror(ret));
 			return ret;
@@ -437,7 +438,7 @@ fs_unlock(struct rte_eth_dev *dev, unsigned int is_alarm)
 		RTE_ASSERT(PRIV(dev)->alarm_lock == 1);
 		PRIV(dev)->alarm_lock = 0;
 	}
-	ret = pthread_mutex_unlock(&PRIV(dev)->hotplug_mutex);
+	ret = real_pthread_mutex_unlock(&PRIV(dev)->hotplug_mutex);
 	if (ret)
 		ERROR("Cannot unlock hot-plug mutex(%s)", strerror(ret));
 }

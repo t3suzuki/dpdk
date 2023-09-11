@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2016-2018 Intel Corporation
  */
@@ -221,15 +222,15 @@ rte_mp_action_register(const char *name, rte_mp_t action)
 	strlcpy(entry->action_name, name, sizeof(entry->action_name));
 	entry->action = action;
 
-	pthread_mutex_lock(&mp_mutex_action);
+	real_pthread_mutex_lock(&mp_mutex_action);
 	if (find_action_entry_by_name(name) != NULL) {
-		pthread_mutex_unlock(&mp_mutex_action);
+		real_pthread_mutex_unlock(&mp_mutex_action);
 		rte_errno = EEXIST;
 		free(entry);
 		return -1;
 	}
 	TAILQ_INSERT_TAIL(&action_entry_list, entry, next);
-	pthread_mutex_unlock(&mp_mutex_action);
+	real_pthread_mutex_unlock(&mp_mutex_action);
 	return 0;
 }
 
@@ -248,14 +249,14 @@ rte_mp_action_unregister(const char *name)
 		return;
 	}
 
-	pthread_mutex_lock(&mp_mutex_action);
+	real_pthread_mutex_lock(&mp_mutex_action);
 	entry = find_action_entry_by_name(name);
 	if (entry == NULL) {
-		pthread_mutex_unlock(&mp_mutex_action);
+		real_pthread_mutex_unlock(&mp_mutex_action);
 		return;
 	}
 	TAILQ_REMOVE(&action_entry_list, entry, next);
-	pthread_mutex_unlock(&mp_mutex_action);
+	real_pthread_mutex_unlock(&mp_mutex_action);
 	free(entry);
 }
 
@@ -336,7 +337,7 @@ process_msg(struct mp_msg_internal *m, struct sockaddr_un *s)
 	if (m->type == MP_REP || m->type == MP_IGN) {
 		struct pending_request *req = NULL;
 
-		pthread_mutex_lock(&pending_requests.lock);
+		real_pthread_mutex_lock(&pending_requests.lock);
 		pending_req = find_pending_request(s->sun_path, msg->name);
 		if (pending_req) {
 			memcpy(pending_req->reply, msg, sizeof(*msg));
@@ -345,24 +346,24 @@ process_msg(struct mp_msg_internal *m, struct sockaddr_un *s)
 				m->type == MP_REP ? 1 : -1;
 
 			if (pending_req->type == REQUEST_TYPE_SYNC)
-				pthread_cond_signal(&pending_req->sync.cond);
+				real_pthread_cond_signal(&pending_req->sync.cond);
 			else if (pending_req->type == REQUEST_TYPE_ASYNC)
 				req = async_reply_handle_thread_unsafe(
 						pending_req);
 		} else
 			RTE_LOG(ERR, EAL, "Drop mp reply: %s\n", msg->name);
-		pthread_mutex_unlock(&pending_requests.lock);
+		real_pthread_mutex_unlock(&pending_requests.lock);
 
 		if (req != NULL)
 			trigger_async_action(req);
 		return;
 	}
 
-	pthread_mutex_lock(&mp_mutex_action);
+	real_pthread_mutex_lock(&mp_mutex_action);
 	entry = find_action_entry_by_name(msg->name);
 	if (entry != NULL)
 		action = entry->action;
-	pthread_mutex_unlock(&mp_mutex_action);
+	real_pthread_mutex_unlock(&mp_mutex_action);
 
 	if (!action) {
 		if (m->type == MP_REQ && !internal_conf->init_complete) {
@@ -538,9 +539,9 @@ async_reply_handle(void *arg)
 {
 	struct pending_request *req;
 
-	pthread_mutex_lock(&pending_requests.lock);
+	real_pthread_mutex_lock(&pending_requests.lock);
 	req = async_reply_handle_thread_unsafe(arg);
-	pthread_mutex_unlock(&pending_requests.lock);
+	real_pthread_mutex_unlock(&pending_requests.lock);
 
 	if (req != NULL)
 		trigger_async_action(req);
@@ -661,7 +662,7 @@ rte_mp_channel_cleanup(void)
 		return;
 
 	pthread_cancel(mp_handle_tid);
-	pthread_join(mp_handle_tid, NULL);
+	real_pthread_join(mp_handle_tid, NULL);
 	close_socket_fd(fd);
 }
 
@@ -921,7 +922,7 @@ mp_request_sync(const char *dst, struct rte_mp_msg *req,
 	pending_req.reply = &msg;
 	pthread_condattr_init(&attr);
 	pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
-	pthread_cond_init(&pending_req.sync.cond, &attr);
+	real_pthread_cond_init(&pending_req.sync.cond, &attr);
 
 	exist = find_pending_request(dst, req->name);
 	if (exist) {
@@ -943,7 +944,7 @@ mp_request_sync(const char *dst, struct rte_mp_msg *req,
 	reply->nb_sent++;
 
 	do {
-		ret = pthread_cond_timedwait(&pending_req.sync.cond,
+		ret = real_pthread_cond_timedwait(&pending_req.sync.cond,
 				&pending_requests.lock, ts);
 	} while (ret != 0 && ret != ETIMEDOUT);
 
@@ -1015,9 +1016,9 @@ rte_mp_request_sync(struct rte_mp_msg *req, struct rte_mp_reply *reply,
 
 	/* for secondary process, send request to the primary process only */
 	if (rte_eal_process_type() == RTE_PROC_SECONDARY) {
-		pthread_mutex_lock(&pending_requests.lock);
+		real_pthread_mutex_lock(&pending_requests.lock);
 		ret = mp_request_sync(eal_mp_socket_path(), req, reply, &end);
-		pthread_mutex_unlock(&pending_requests.lock);
+		real_pthread_mutex_unlock(&pending_requests.lock);
 		goto end;
 	}
 
@@ -1038,7 +1039,7 @@ rte_mp_request_sync(struct rte_mp_msg *req, struct rte_mp_reply *reply,
 		goto close_end;
 	}
 
-	pthread_mutex_lock(&pending_requests.lock);
+	real_pthread_mutex_lock(&pending_requests.lock);
 	while ((ent = readdir(mp_dir))) {
 		char path[PATH_MAX];
 
@@ -1057,7 +1058,7 @@ rte_mp_request_sync(struct rte_mp_msg *req, struct rte_mp_reply *reply,
 	ret = 0;
 
 unlock_end:
-	pthread_mutex_unlock(&pending_requests.lock);
+	real_pthread_mutex_unlock(&pending_requests.lock);
 	/* unlock the directory */
 	flock(dir_fd, LOCK_UN);
 
@@ -1135,7 +1136,7 @@ rte_mp_request_async(struct rte_mp_msg *req, const struct timespec *ts,
 	 * of requests to the queue at once, and some of the replies may arrive
 	 * before we add all of the requests to the queue.
 	 */
-	pthread_mutex_lock(&pending_requests.lock);
+	real_pthread_mutex_lock(&pending_requests.lock);
 
 	/* we have to ensure that callback gets triggered even if we don't send
 	 * anything, therefore earlier we have allocated a dummy request. fill
@@ -1158,7 +1159,7 @@ rte_mp_request_async(struct rte_mp_msg *req, const struct timespec *ts,
 			dummy_used = true;
 		}
 
-		pthread_mutex_unlock(&pending_requests.lock);
+		real_pthread_mutex_unlock(&pending_requests.lock);
 
 		/* if we couldn't send anything, clean up */
 		if (ret != 0)
@@ -1202,7 +1203,7 @@ rte_mp_request_async(struct rte_mp_msg *req, const struct timespec *ts,
 	}
 
 	/* finally, unlock the queue */
-	pthread_mutex_unlock(&pending_requests.lock);
+	real_pthread_mutex_unlock(&pending_requests.lock);
 
 	/* unlock the directory */
 	flock(dir_fd, LOCK_UN);
@@ -1218,7 +1219,7 @@ rte_mp_request_async(struct rte_mp_msg *req, const struct timespec *ts,
 closedir_fail:
 	closedir(mp_dir);
 unlock_fail:
-	pthread_mutex_unlock(&pending_requests.lock);
+	real_pthread_mutex_unlock(&pending_requests.lock);
 fail:
 	free(dummy);
 	free(param);

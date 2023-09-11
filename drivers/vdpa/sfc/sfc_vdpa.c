@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2020-2021 Xilinx, Inc.
  */
@@ -30,7 +31,7 @@ sfc_vdpa_get_adapter_by_dev(struct rte_pci_device *pdev)
 	bool found = false;
 	struct sfc_vdpa_adapter *sva;
 
-	pthread_mutex_lock(&sfc_vdpa_adapter_list_lock);
+	real_pthread_mutex_lock(&sfc_vdpa_adapter_list_lock);
 
 	TAILQ_FOREACH(sva, &sfc_vdpa_adapter_list, next) {
 		if (pdev == sva->pdev) {
@@ -39,7 +40,7 @@ sfc_vdpa_get_adapter_by_dev(struct rte_pci_device *pdev)
 		}
 	}
 
-	pthread_mutex_unlock(&sfc_vdpa_adapter_list_lock);
+	real_pthread_mutex_unlock(&sfc_vdpa_adapter_list_lock);
 
 	return found ? sva : NULL;
 }
@@ -50,7 +51,7 @@ sfc_vdpa_get_data_by_dev(struct rte_vdpa_device *vdpa_dev)
 	bool found = false;
 	struct sfc_vdpa_adapter *sva;
 
-	pthread_mutex_lock(&sfc_vdpa_adapter_list_lock);
+	real_pthread_mutex_lock(&sfc_vdpa_adapter_list_lock);
 
 	TAILQ_FOREACH(sva, &sfc_vdpa_adapter_list, next) {
 		if (vdpa_dev == sva->ops_data->vdpa_dev) {
@@ -59,7 +60,7 @@ sfc_vdpa_get_data_by_dev(struct rte_vdpa_device *vdpa_dev)
 		}
 	}
 
-	pthread_mutex_unlock(&sfc_vdpa_adapter_list_lock);
+	real_pthread_mutex_unlock(&sfc_vdpa_adapter_list_lock);
 
 	return found ? sva->ops_data : NULL;
 }
@@ -293,9 +294,9 @@ sfc_vdpa_pci_probe(struct rte_pci_driver *pci_drv __rte_unused,
 		goto fail_dev_init;
 	}
 
-	pthread_mutex_lock(&sfc_vdpa_adapter_list_lock);
+	real_pthread_mutex_lock(&sfc_vdpa_adapter_list_lock);
 	TAILQ_INSERT_TAIL(&sfc_vdpa_adapter_list, sva, next);
-	pthread_mutex_unlock(&sfc_vdpa_adapter_list_lock);
+	real_pthread_mutex_unlock(&sfc_vdpa_adapter_list_lock);
 
 	sfc_vdpa_log_init(sva, "done");
 
@@ -333,9 +334,9 @@ sfc_vdpa_pci_remove(struct rte_pci_device *pci_dev)
 		return -1;
 	}
 
-	pthread_mutex_lock(&sfc_vdpa_adapter_list_lock);
+	real_pthread_mutex_lock(&sfc_vdpa_adapter_list_lock);
 	TAILQ_REMOVE(&sfc_vdpa_adapter_list, sva, next);
-	pthread_mutex_unlock(&sfc_vdpa_adapter_list_lock);
+	real_pthread_mutex_unlock(&sfc_vdpa_adapter_list_lock);
 
 	sfc_vdpa_device_fini(sva->ops_data);
 

@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2017 Intel Corporation
  */
@@ -72,9 +73,9 @@ iavf_dev_event_handle(void *param __rte_unused)
 			break;
 
 		TAILQ_INIT(&pending);
-		pthread_mutex_lock(&handler->lock);
+		real_pthread_mutex_lock(&handler->lock);
 		TAILQ_CONCAT(&pending, &handler->pending, next);
-		pthread_mutex_unlock(&handler->lock);
+		real_pthread_mutex_unlock(&handler->lock);
 
 		struct iavf_event_element *pos, *save_next;
 		TAILQ_FOREACH_SAFE(pos, &pending, next, save_next) {
@@ -107,9 +108,9 @@ iavf_dev_event_post(struct rte_eth_dev *dev,
 		elem->param = elem->param_alloc_data;
 	}
 
-	pthread_mutex_lock(&handler->lock);
+	real_pthread_mutex_lock(&handler->lock);
 	TAILQ_INSERT_TAIL(&handler->pending, elem, next);
-	pthread_mutex_unlock(&handler->lock);
+	real_pthread_mutex_unlock(&handler->lock);
 
 	ssize_t nw = write(handler->fd[1], &notify_byte, 1);
 	RTE_SET_USED(nw);
@@ -133,7 +134,7 @@ iavf_dev_event_handler_init(void)
 	}
 
 	TAILQ_INIT(&handler->pending);
-	pthread_mutex_init(&handler->lock, NULL);
+	real_pthread_mutex_init(&handler->lock, NULL);
 
 	if (rte_ctrl_thread_create(&handler->tid, "iavf-event-thread",
 				NULL, iavf_dev_event_handle, NULL)) {
@@ -159,8 +160,8 @@ iavf_dev_event_handler_fini(void)
 	handler->fd[0] = -1;
 	handler->fd[1] = -1;
 
-	pthread_join(handler->tid, NULL);
-	pthread_mutex_destroy(&handler->lock);
+	real_pthread_join(handler->tid, NULL);
+	real_pthread_mutex_destroy(&handler->lock);
 
 	struct iavf_event_element *pos, *save_next;
 	TAILQ_FOREACH_SAFE(pos, &handler->pending, next, save_next) {

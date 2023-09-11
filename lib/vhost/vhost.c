@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2010-2017 Intel Corporation
  */
@@ -677,7 +678,7 @@ vhost_new_device(void)
 	struct virtio_net *dev;
 	int i;
 
-	pthread_mutex_lock(&vhost_dev_lock);
+	real_pthread_mutex_lock(&vhost_dev_lock);
 	for (i = 0; i < RTE_MAX_VHOST_DEVICE; i++) {
 		if (vhost_devices[i] == NULL)
 			break;
@@ -685,19 +686,19 @@ vhost_new_device(void)
 
 	if (i == RTE_MAX_VHOST_DEVICE) {
 		VHOST_LOG_CONFIG("device", ERR, "failed to find a free slot for new device.\n");
-		pthread_mutex_unlock(&vhost_dev_lock);
+		real_pthread_mutex_unlock(&vhost_dev_lock);
 		return -1;
 	}
 
 	dev = rte_zmalloc(NULL, sizeof(struct virtio_net), 0);
 	if (dev == NULL) {
 		VHOST_LOG_CONFIG("device", ERR, "failed to allocate memory for new device.\n");
-		pthread_mutex_unlock(&vhost_dev_lock);
+		real_pthread_mutex_unlock(&vhost_dev_lock);
 		return -1;
 	}
 
 	vhost_devices[i] = dev;
-	pthread_mutex_unlock(&vhost_dev_lock);
+	real_pthread_mutex_unlock(&vhost_dev_lock);
 
 	dev->vid = i;
 	dev->flags = VIRTIO_DEV_BUILTIN_VIRTIO_NET;
@@ -1867,7 +1868,7 @@ rte_vhost_async_dma_configure(int16_t dma_id, uint16_t vchan_id)
 	void *pkts_cmpl_flag_addr;
 	uint16_t max_desc;
 
-	pthread_mutex_lock(&vhost_dma_lock);
+	real_pthread_mutex_lock(&vhost_dma_lock);
 
 	if (!rte_dma_is_valid(dma_id)) {
 		VHOST_LOG_CONFIG("dma", ERR, "DMA %d is not found.\n", dma_id);
@@ -1902,7 +1903,7 @@ rte_vhost_async_dma_configure(int16_t dma_id, uint16_t vchan_id)
 	if (dma_copy_track[dma_id].vchans[vchan_id].pkts_cmpl_flag_addr) {
 		VHOST_LOG_CONFIG("dma", INFO, "DMA %d vChannel %u already registered.\n",
 			dma_id, vchan_id);
-		pthread_mutex_unlock(&vhost_dma_lock);
+		real_pthread_mutex_unlock(&vhost_dma_lock);
 		return 0;
 	}
 
@@ -1928,11 +1929,11 @@ rte_vhost_async_dma_configure(int16_t dma_id, uint16_t vchan_id)
 	dma_copy_track[dma_id].vchans[vchan_id].ring_mask = max_desc - 1;
 	dma_copy_track[dma_id].nr_vchans++;
 
-	pthread_mutex_unlock(&vhost_dma_lock);
+	real_pthread_mutex_unlock(&vhost_dma_lock);
 	return 0;
 
 error:
-	pthread_mutex_unlock(&vhost_dma_lock);
+	real_pthread_mutex_unlock(&vhost_dma_lock);
 	return -1;
 }
 
@@ -2124,7 +2125,7 @@ rte_vhost_async_dma_unconfigure(int16_t dma_id, uint16_t vchan_id)
 	struct rte_dma_info info;
 	struct rte_dma_stats stats = { 0 };
 
-	pthread_mutex_lock(&vhost_dma_lock);
+	real_pthread_mutex_lock(&vhost_dma_lock);
 
 	if (!rte_dma_is_valid(dma_id)) {
 		VHOST_LOG_CONFIG("dma", ERR, "DMA %d is not found.\n", dma_id);
@@ -2163,11 +2164,11 @@ rte_vhost_async_dma_unconfigure(int16_t dma_id, uint16_t vchan_id)
 		dma_copy_track[dma_id].vchans = NULL;
 	}
 
-	pthread_mutex_unlock(&vhost_dma_lock);
+	real_pthread_mutex_unlock(&vhost_dma_lock);
 	return 0;
 
 error:
-	pthread_mutex_unlock(&vhost_dma_lock);
+	real_pthread_mutex_unlock(&vhost_dma_lock);
 	return -1;
 }
 

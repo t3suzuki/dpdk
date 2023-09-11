@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2014-2021 Broadcom
  * All rights reserved.
@@ -84,7 +85,7 @@ ulp_fc_mgr_init(struct bnxt_ulp_context *ctxt)
 	if (!ulp_fc_info)
 		goto error;
 
-	rc = pthread_mutex_init(&ulp_fc_info->fc_lock, NULL);
+	rc = real_pthread_mutex_init(&ulp_fc_info->fc_lock, NULL);
 	if (rc) {
 		PMD_DRV_LOG(ERR, "Failed to initialize fc mutex\n");
 		goto error;
@@ -149,7 +150,7 @@ ulp_fc_mgr_deinit(struct bnxt_ulp_context *ctxt)
 
 	ulp_fc_mgr_thread_cancel(ctxt);
 
-	pthread_mutex_destroy(&ulp_fc_info->fc_lock);
+	real_pthread_mutex_destroy(&ulp_fc_info->fc_lock);
 
 	if (ulp_fc_info->num_counters) {
 		for (i = 0; i < TF_DIR_MAX; i++)
@@ -483,11 +484,11 @@ ulp_fc_mgr_alarm_cb(void *arg)
 	 * Take the fc_lock to ensure no flow is destroyed
 	 * during the bulk get
 	 */
-	if (pthread_mutex_trylock(&ulp_fc_info->fc_lock))
+	if (real_pthread_mutex_trylock(&ulp_fc_info->fc_lock))
 		goto out;
 
 	if (!ulp_fc_info->num_entries) {
-		pthread_mutex_unlock(&ulp_fc_info->fc_lock);
+		real_pthread_mutex_unlock(&ulp_fc_info->fc_lock);
 		ulp_fc_mgr_thread_cancel(ctxt);
 		bnxt_ulp_cntxt_entry_release();
 		return;
@@ -519,7 +520,7 @@ ulp_fc_mgr_alarm_cb(void *arg)
 		}
 	}
 
-	pthread_mutex_unlock(&ulp_fc_info->fc_lock);
+	real_pthread_mutex_unlock(&ulp_fc_info->fc_lock);
 
 	/*
 	 * If cmd fails once, no need of
@@ -615,12 +616,12 @@ int32_t ulp_fc_mgr_cntr_set(struct bnxt_ulp_context *ctxt, enum tf_dir dir,
 	if (!ulp_fc_info->num_counters)
 		return 0;
 
-	pthread_mutex_lock(&ulp_fc_info->fc_lock);
+	real_pthread_mutex_lock(&ulp_fc_info->fc_lock);
 	sw_cntr_idx = hw_cntr_id - ulp_fc_info->shadow_hw_tbl[dir].start_idx;
 	ulp_fc_info->sw_acc_tbl[dir][sw_cntr_idx].valid = true;
 	ulp_fc_info->sw_acc_tbl[dir][sw_cntr_idx].hw_cntr_id = hw_cntr_id;
 	ulp_fc_info->num_entries++;
-	pthread_mutex_unlock(&ulp_fc_info->fc_lock);
+	real_pthread_mutex_unlock(&ulp_fc_info->fc_lock);
 
 	return 0;
 }
@@ -650,7 +651,7 @@ int32_t ulp_fc_mgr_cntr_reset(struct bnxt_ulp_context *ctxt, enum tf_dir dir,
 	if (!ulp_fc_info->num_counters)
 		return 0;
 
-	pthread_mutex_lock(&ulp_fc_info->fc_lock);
+	real_pthread_mutex_lock(&ulp_fc_info->fc_lock);
 	sw_cntr_idx = hw_cntr_id - ulp_fc_info->shadow_hw_tbl[dir].start_idx;
 	ulp_fc_info->sw_acc_tbl[dir][sw_cntr_idx].valid = false;
 	ulp_fc_info->sw_acc_tbl[dir][sw_cntr_idx].hw_cntr_id = 0;
@@ -658,7 +659,7 @@ int32_t ulp_fc_mgr_cntr_reset(struct bnxt_ulp_context *ctxt, enum tf_dir dir,
 	ulp_fc_info->sw_acc_tbl[dir][sw_cntr_idx].byte_count = 0;
 	ulp_fc_info->sw_acc_tbl[dir][sw_cntr_idx].pc_flow_idx = 0;
 	ulp_fc_info->num_entries--;
-	pthread_mutex_unlock(&ulp_fc_info->fc_lock);
+	real_pthread_mutex_unlock(&ulp_fc_info->fc_lock);
 
 	return 0;
 }
@@ -736,7 +737,7 @@ int ulp_fc_mgr_query_count_get(struct bnxt_ulp_context *ctxt,
 		/* TODO:
 		 * Think about optimizing with try_lock later
 		 */
-		pthread_mutex_lock(&ulp_fc_info->fc_lock);
+		real_pthread_mutex_lock(&ulp_fc_info->fc_lock);
 		sw_cntr_idx = hw_cntr_id -
 			ulp_fc_info->shadow_hw_tbl[dir].start_idx;
 		sw_acc_tbl_entry = &ulp_fc_info->sw_acc_tbl[dir][sw_cntr_idx];
@@ -750,7 +751,7 @@ int ulp_fc_mgr_query_count_get(struct bnxt_ulp_context *ctxt,
 			sw_acc_tbl_entry->pkt_count = 0;
 			sw_acc_tbl_entry->byte_count = 0;
 		}
-		pthread_mutex_unlock(&ulp_fc_info->fc_lock);
+		real_pthread_mutex_unlock(&ulp_fc_info->fc_lock);
 	} else if (found_parent_flow &&
 		   params.resource_sub_type ==
 			BNXT_ULP_RESOURCE_SUB_TYPE_INDEX_TABLE_INT_COUNT) {
@@ -795,7 +796,7 @@ int32_t ulp_fc_mgr_cntr_parent_flow_set(struct bnxt_ulp_context *ctxt,
 	if (!ulp_fc_info)
 		return -EIO;
 
-	pthread_mutex_lock(&ulp_fc_info->fc_lock);
+	real_pthread_mutex_lock(&ulp_fc_info->fc_lock);
 	sw_cntr_idx = hw_cntr_id - ulp_fc_info->shadow_hw_tbl[dir].start_idx;
 	if (ulp_fc_info->sw_acc_tbl[dir][sw_cntr_idx].valid) {
 		pc_idx |= FLOW_CNTR_PC_FLOW_VALID;
@@ -805,7 +806,7 @@ int32_t ulp_fc_mgr_cntr_parent_flow_set(struct bnxt_ulp_context *ctxt,
 			    hw_cntr_id, pc_idx);
 		rc = -ENOENT;
 	}
-	pthread_mutex_unlock(&ulp_fc_info->fc_lock);
+	real_pthread_mutex_unlock(&ulp_fc_info->fc_lock);
 
 	return rc;
 }

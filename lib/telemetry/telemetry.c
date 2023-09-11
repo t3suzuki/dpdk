@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2020 Intel Corporation
  */
@@ -417,7 +418,7 @@ socket_listener(void *socket)
 			__atomic_add_fetch(s->num_clients, 1,
 					__ATOMIC_RELAXED);
 		}
-		rc = pthread_create(&th, NULL, s->fn,
+		rc = real_pthread_create(&th, NULL, s->fn,
 				    (void *)(uintptr_t)s_accepted);
 		if (rc != 0) {
 			TMTY_LOG(ERR, "Error with create client thread: %s\n",
@@ -537,7 +538,7 @@ telemetry_legacy_init(void)
 		v1_socket.path[0] = '\0';
 		return -1;
 	}
-	rc = pthread_create(&t_old, NULL, socket_listener, &v1_socket);
+	rc = real_pthread_create(&t_old, NULL, socket_listener, &v1_socket);
 	if (rc != 0) {
 		TMTY_LOG(ERR, "Error with create legacy socket thread: %s\n",
 			 strerror(rc));
@@ -591,7 +592,7 @@ telemetry_v2_init(void)
 		}
 		v2_socket.sock = create_socket(v2_socket.path);
 	}
-	rc = pthread_create(&t_new, NULL, socket_listener, &v2_socket);
+	rc = real_pthread_create(&t_new, NULL, socket_listener, &v2_socket);
 	if (rc != 0) {
 		TMTY_LOG(ERR, "Error with create socket thread: %s\n",
 			 strerror(rc));

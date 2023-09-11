@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2010-2018 Intel Corporation
  */
@@ -579,7 +580,7 @@ ifpga_monitor_stop_func(struct ifpga_rawdev *dev)
 		if (ret)
 			IFPGA_RAWDEV_PMD_ERR("Can't cancel the thread");
 
-		ret = pthread_join(ifpga_monitor_start_thread, NULL);
+		ret = real_pthread_join(ifpga_monitor_start_thread, NULL);
 		if (ret)
 			IFPGA_RAWDEV_PMD_ERR("Can't join the thread");
 

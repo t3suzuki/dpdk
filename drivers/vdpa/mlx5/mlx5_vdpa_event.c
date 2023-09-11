@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright 2019 Mellanox Technologies, Ltd
  */
@@ -175,11 +176,11 @@ mlx5_vdpa_arm_all_cqs(struct mlx5_vdpa_priv *priv)
 
 	for (i = 0; i < priv->nr_virtqs; i++) {
 		virtq = &priv->virtqs[i];
-		pthread_mutex_lock(&virtq->virtq_lock);
+		real_pthread_mutex_lock(&virtq->virtq_lock);
 		cq = &priv->virtqs[i].eqp.cq;
 		if (cq->cq_obj.cq && !cq->armed)
 			mlx5_vdpa_cq_arm(priv, cq);
-		pthread_mutex_unlock(&virtq->virtq_lock);
+		real_pthread_mutex_unlock(&virtq->virtq_lock);
 	}
 }
 
@@ -234,10 +235,10 @@ mlx5_vdpa_queues_complete(struct mlx5_vdpa_priv *priv)
 
 	for (i = 0; i < priv->nr_virtqs; i++) {
 		virtq = &priv->virtqs[i];
-		pthread_mutex_lock(&virtq->virtq_lock);
+		real_pthread_mutex_lock(&virtq->virtq_lock);
 		cq = &virtq->eqp.cq;
 		comp = mlx5_vdpa_queue_complete(cq);
-		pthread_mutex_unlock(&virtq->virtq_lock);
+		real_pthread_mutex_unlock(&virtq->virtq_lock);
 		if (comp > max)
 			max = comp;
 	}
@@ -306,15 +307,15 @@ mlx5_vdpa_event_handle(void *arg)
 					virtq = mlx5_vdpa_event_wait(priv);
 					if (virtq == NULL)
 						break;
-					pthread_mutex_lock(
+					real_pthread_mutex_lock(
 						&virtq->virtq_lock);
 					if (mlx5_vdpa_queue_complete(
 						&virtq->eqp.cq) > 0) {
-						pthread_mutex_unlock(
+						real_pthread_mutex_unlock(
 							&virtq->virtq_lock);
 						break;
 					}
-					pthread_mutex_unlock(
+					real_pthread_mutex_unlock(
 						&virtq->virtq_lock);
 				} while (1);
 				priv->timer_delay_us = priv->event_us;
@@ -329,11 +330,11 @@ mlx5_vdpa_event_handle(void *arg)
 		do {
 			virtq = mlx5_vdpa_event_wait(priv);
 			if (virtq != NULL) {
-				pthread_mutex_lock(&virtq->virtq_lock);
+				real_pthread_mutex_lock(&virtq->virtq_lock);
 				if (mlx5_vdpa_queue_complete(
 					&virtq->eqp.cq) > 0)
 					mlx5_vdpa_cq_arm(priv, &virtq->eqp.cq);
-				pthread_mutex_unlock(&virtq->virtq_lock);
+				real_pthread_mutex_unlock(&virtq->virtq_lock);
 			}
 		} while (1);
 		return NULL;
@@ -366,7 +367,7 @@ mlx5_vdpa_err_interrupt_handler(void *cb_arg __rte_unused)
 			continue;
 		}
 		virtq = &priv->virtqs[vq_index];
-		pthread_mutex_lock(&virtq->virtq_lock);
+		real_pthread_mutex_lock(&virtq->virtq_lock);
 		if (!virtq->enable || virtq->version != version)
 			goto unlock;
 		if (rte_rdtsc() / rte_get_tsc_hz() < MLX5_VDPA_ERROR_TIME_SEC)
@@ -401,7 +402,7 @@ log:
 			virtq->err_time[i - 1] = virtq->err_time[i];
 		virtq->err_time[RTE_DIM(virtq->err_time) - 1] = rte_rdtsc();
 unlock:
-		pthread_mutex_unlock(&virtq->virtq_lock);
+		real_pthread_mutex_unlock(&virtq->virtq_lock);
 	}
 #endif
 }
@@ -530,7 +531,7 @@ mlx5_vdpa_cqe_event_setup(struct mlx5_vdpa_priv *priv)
 		DRV_LOG(ERR, "Failed to set thread priority.");
 		goto out;
 	}
-	ret = pthread_create(&priv->timer_tid, attrp, mlx5_vdpa_event_handle,
+	ret = real_pthread_create(&priv->timer_tid, attrp, mlx5_vdpa_event_handle,
 			     (void *)priv);
 	if (ret) {
 		DRV_LOG(ERR, "Failed to create timer thread.");
@@ -565,11 +566,11 @@ mlx5_vdpa_cqe_event_unset(struct mlx5_vdpa_priv *priv)
 
 	if (priv->timer_tid) {
 		pthread_cancel(priv->timer_tid);
-		pthread_join(priv->timer_tid, &status);
+		real_pthread_join(priv->timer_tid, &status);
 		/* The mutex may stay locked after event thread cancel, initiate it. */
 		for (i = 0; i < priv->nr_virtqs; i++) {
 			virtq = &priv->virtqs[i];
-			pthread_mutex_init(&virtq->virtq_lock, NULL);
+			real_pthread_mutex_init(&virtq->virtq_lock, NULL);
 		}
 	}
 	priv->timer_tid = 0;

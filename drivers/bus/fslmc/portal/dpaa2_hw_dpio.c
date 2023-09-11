@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  *
  *   Copyright (c) 2016 Freescale Semiconductor, Inc. All rights reserved.
@@ -294,9 +295,9 @@ static struct dpaa2_dpio_dev *dpaa2_get_qbman_swp(void)
 		}
 	}
 
-	ret = pthread_setspecific(dpaa2_portal_key, (void *)dpio_dev);
+	ret = real_pthread_setspecific(dpaa2_portal_key, (void *)dpio_dev);
 	if (ret) {
-		DPAA2_BUS_ERR("pthread_setspecific failed with ret: %d", ret);
+		DPAA2_BUS_ERR("real_pthread_setspecific failed with ret: %d", ret);
 		dpaa2_put_qbman_swp(dpio_dev);
 		return NULL;
 	}
@@ -355,7 +356,7 @@ static void dpaa2_portal_finish(void *arg)
 	dpaa2_put_qbman_swp(RTE_PER_LCORE(_dpaa2_io).dpio_dev);
 	dpaa2_put_qbman_swp(RTE_PER_LCORE(_dpaa2_io).ethrx_dpio_dev);
 
-	pthread_setspecific(dpaa2_portal_key, NULL);
+	real_pthread_setspecific(dpaa2_portal_key, NULL);
 }
 
 static int
@@ -521,7 +522,7 @@ dpaa2_create_dpio_device(int vdev_fd,
 		/* create the key, supplying a function that'll be invoked
 		 * when a portal affined thread will be deleted.
 		 */
-		ret = pthread_key_create(&dpaa2_portal_key,
+		ret = real_pthread_key_create(&dpaa2_portal_key,
 					 dpaa2_portal_finish);
 		if (ret) {
 			DPAA2_BUS_DEBUG("Unable to create pthread key (%d)",

@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(C) 2021 Marvell.
  */
@@ -119,7 +120,7 @@ roc_bphy_cgx_intf_req(struct roc_bphy_cgx *roc_cgx, unsigned int lmac,
 	uint8_t cmd_id = FIELD_GET(SCR1_ETH_CMD_ID, scr1);
 	int ret;
 
-	pthread_mutex_lock(&roc_cgx->lock);
+	real_pthread_mutex_lock(&roc_cgx->lock);
 
 	/* wait for ownership */
 	ret = roc_bphy_cgx_wait_for_ownership(roc_cgx, lmac, scr0);
@@ -165,7 +166,7 @@ roc_bphy_cgx_intf_req(struct roc_bphy_cgx *roc_cgx, unsigned int lmac,
 out:
 	roc_bphy_cgx_ack(roc_cgx, lmac, scr0);
 
-	pthread_mutex_unlock(&roc_cgx->lock);
+	real_pthread_mutex_unlock(&roc_cgx->lock);
 
 	return ret;
 }
@@ -194,7 +195,7 @@ roc_bphy_cgx_dev_init(struct roc_bphy_cgx *roc_cgx)
 	if (!roc_cgx || !roc_cgx->bar0_va || !roc_cgx->bar0_pa)
 		return -EINVAL;
 
-	ret = pthread_mutex_init(&roc_cgx->lock, NULL);
+	ret = real_pthread_mutex_init(&roc_cgx->lock, NULL);
 	if (ret)
 		return ret;
 
@@ -214,7 +215,7 @@ roc_bphy_cgx_dev_fini(struct roc_bphy_cgx *roc_cgx)
 	if (!roc_cgx)
 		return -EINVAL;
 
-	pthread_mutex_destroy(&roc_cgx->lock);
+	real_pthread_mutex_destroy(&roc_cgx->lock);
 
 	return 0;
 }
@@ -248,7 +249,7 @@ roc_bphy_cgx_start_stop_rxtx(struct roc_bphy_cgx *roc_cgx, unsigned int lmac,
 		tx_field = CGX_CMRX_CONFIG_DATA_PKT_TX_EN;
 	}
 
-	pthread_mutex_lock(&roc_cgx->lock);
+	real_pthread_mutex_lock(&roc_cgx->lock);
 	val = roc_bphy_cgx_read(roc_cgx, lmac, reg);
 	val &= ~(rx_field | tx_field);
 
@@ -256,7 +257,7 @@ roc_bphy_cgx_start_stop_rxtx(struct roc_bphy_cgx *roc_cgx, unsigned int lmac,
 		val |= FIELD_PREP(rx_field, 1) | FIELD_PREP(tx_field, 1);
 
 	roc_bphy_cgx_write(roc_cgx, lmac, reg, val);
-	pthread_mutex_unlock(&roc_cgx->lock);
+	real_pthread_mutex_unlock(&roc_cgx->lock);
 
 	return 0;
 }

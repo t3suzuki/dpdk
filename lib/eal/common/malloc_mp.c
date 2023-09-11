@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2018 Intel Corporation
  */
@@ -301,7 +302,7 @@ handle_request(const struct rte_mp_msg *msg, const void *peer __rte_unused)
 	int ret;
 
 	/* lock access to request */
-	pthread_mutex_lock(&mp_request_list.lock);
+	real_pthread_mutex_lock(&mp_request_list.lock);
 
 	/* make sure it's not a dupe */
 	entry = find_request_by_id(m->id);
@@ -387,10 +388,10 @@ handle_request(const struct rte_mp_msg *msg, const void *peer __rte_unused)
 
 		TAILQ_INSERT_TAIL(&mp_request_list.list, entry, next);
 	}
-	pthread_mutex_unlock(&mp_request_list.lock);
+	real_pthread_mutex_unlock(&mp_request_list.lock);
 	return 0;
 fail:
-	pthread_mutex_unlock(&mp_request_list.lock);
+	real_pthread_mutex_unlock(&mp_request_list.lock);
 	free(entry);
 	return -1;
 }
@@ -409,7 +410,7 @@ handle_sync_response(const struct rte_mp_msg *request,
 	int i;
 
 	/* lock the request */
-	pthread_mutex_lock(&mp_request_list.lock);
+	real_pthread_mutex_lock(&mp_request_list.lock);
 
 	entry = find_request_by_id(mpreq->id);
 	if (entry == NULL) {
@@ -539,10 +540,10 @@ handle_sync_response(const struct rte_mp_msg *request,
 		goto fail;
 	}
 
-	pthread_mutex_unlock(&mp_request_list.lock);
+	real_pthread_mutex_unlock(&mp_request_list.lock);
 	return 0;
 fail:
-	pthread_mutex_unlock(&mp_request_list.lock);
+	real_pthread_mutex_unlock(&mp_request_list.lock);
 	return -1;
 }
 
@@ -557,7 +558,7 @@ handle_rollback_response(const struct rte_mp_msg *request,
 	struct mp_request *entry;
 
 	/* lock the request */
-	pthread_mutex_lock(&mp_request_list.lock);
+	real_pthread_mutex_lock(&mp_request_list.lock);
 
 	memset(&msg, 0, sizeof(msg));
 
@@ -588,10 +589,10 @@ handle_rollback_response(const struct rte_mp_msg *request,
 	free(entry->alloc_state.ms);
 	free(entry);
 
-	pthread_mutex_unlock(&mp_request_list.lock);
+	real_pthread_mutex_unlock(&mp_request_list.lock);
 	return 0;
 fail:
-	pthread_mutex_unlock(&mp_request_list.lock);
+	real_pthread_mutex_unlock(&mp_request_list.lock);
 	return -1;
 }
 
@@ -603,7 +604,7 @@ handle_response(const struct rte_mp_msg *msg, const void *peer  __rte_unused)
 			(const struct malloc_mp_req *)msg->param;
 	struct mp_request *entry;
 
-	pthread_mutex_lock(&mp_request_list.lock);
+	real_pthread_mutex_lock(&mp_request_list.lock);
 
 	entry = find_request_by_id(m->id);
 	if (entry != NULL) {
@@ -613,10 +614,10 @@ handle_response(const struct rte_mp_msg *msg, const void *peer  __rte_unused)
 		entry->state = REQ_STATE_COMPLETE;
 
 		/* trigger thread wakeup */
-		pthread_cond_signal(&entry->cond);
+		real_pthread_cond_signal(&entry->cond);
 	}
 
-	pthread_mutex_unlock(&mp_request_list.lock);
+	real_pthread_mutex_unlock(&mp_request_list.lock);
 
 	return 0;
 }
@@ -706,7 +707,7 @@ request_to_primary(struct malloc_mp_req *user_req)
 	memset(&msg, 0, sizeof(msg));
 	memset(&ts, 0, sizeof(ts));
 
-	pthread_mutex_lock(&mp_request_list.lock);
+	real_pthread_mutex_lock(&mp_request_list.lock);
 
 	entry = malloc(sizeof(*entry));
 	if (entry == NULL) {
@@ -726,7 +727,7 @@ request_to_primary(struct malloc_mp_req *user_req)
 			(now.tv_usec * 1000) / 1000000000;
 
 	/* initialize the request */
-	pthread_cond_init(&entry->cond, NULL);
+	real_pthread_cond_init(&entry->cond, NULL);
 
 	msg.num_fds = 0;
 	msg.len_param = sizeof(*msg_req);
@@ -753,7 +754,7 @@ request_to_primary(struct malloc_mp_req *user_req)
 
 	/* finally, wait on timeout */
 	do {
-		ret = pthread_cond_timedwait(&entry->cond,
+		ret = real_pthread_cond_timedwait(&entry->cond,
 				&mp_request_list.lock, &ts);
 	} while (ret != 0 && ret != ETIMEDOUT);
 
@@ -767,10 +768,10 @@ request_to_primary(struct malloc_mp_req *user_req)
 	TAILQ_REMOVE(&mp_request_list.list, entry, next);
 	free(entry);
 
-	pthread_mutex_unlock(&mp_request_list.lock);
+	real_pthread_mutex_unlock(&mp_request_list.lock);
 	return ret;
 fail:
-	pthread_mutex_unlock(&mp_request_list.lock);
+	real_pthread_mutex_unlock(&mp_request_list.lock);
 	free(entry);
 	return -1;
 }

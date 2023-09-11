@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: (BSD-3-Clause OR GPL-2.0)
  *
  * Copyright 2011-2016 Freescale Semiconductor Inc.
@@ -29,12 +30,12 @@ static int check_fd(void)
 
 	if (fd >= 0)
 		return 0;
-	ret = pthread_mutex_lock(&fd_init_lock);
+	ret = real_pthread_mutex_lock(&fd_init_lock);
 	assert(!ret);
 	/* check again with the lock held */
 	if (fd < 0)
 		fd = open(PROCESS_PATH, O_RDWR);
-	ret = pthread_mutex_unlock(&fd_init_lock);
+	ret = real_pthread_mutex_unlock(&fd_init_lock);
 	assert(!ret);
 	return (fd >= 0) ? 0 : -ENODEV;
 }

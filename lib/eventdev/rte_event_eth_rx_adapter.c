@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2017 Intel Corporation.
  * All rights reserved.
@@ -1646,7 +1647,7 @@ rxa_destroy_intr_thread(struct event_eth_rx_adapter *rx_adapter)
 		RTE_EDEV_LOG_ERR("Can't cancel interrupt thread err = %d\n",
 				err);
 
-	err = pthread_join(rx_adapter->rx_intr_thread, NULL);
+	err = real_pthread_join(rx_adapter->rx_intr_thread, NULL);
 	if (err)
 		RTE_EDEV_LOG_ERR("Can't join interrupt thread err = %d\n", err);
 

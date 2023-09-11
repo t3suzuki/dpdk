@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright (c) 2015-2020 Amazon.com, Inc. or its affiliates.
  * All rights reserved.
@@ -152,8 +153,8 @@ typedef struct {
 #define ENA_WAIT_EVENT_INIT(waitevent)					       \
 	do {								       \
 		ena_wait_event_t *_we = &(waitevent);			       \
-		pthread_mutex_init(&_we->mutex, NULL);			       \
-		pthread_cond_init(&_we->cond, NULL);			       \
+		real_pthread_mutex_init(&_we->mutex, NULL);			       \
+		real_pthread_cond_init(&_we->cond, NULL);			       \
 		_we->flag = 0;						       \
 	} while (0)
 
@@ -169,9 +170,9 @@ typedef struct {
 		wait.tv_sec = now.tv_sec + _tmo / 1000000UL;		       \
 		timeout_us = _tmo % 1000000UL;				       \
 		wait.tv_nsec = (now.tv_usec + timeout_us) * 1000UL;	       \
-		pthread_mutex_lock(&_we->mutex);			       \
+		real_pthread_mutex_lock(&_we->mutex);			       \
 		while (ret == 0 && !_we->flag) {			       \
-			ret = pthread_cond_timedwait(&_we->cond,	       \
+			ret = real_pthread_cond_timedwait(&_we->cond,	       \
 				&_we->mutex, &wait);			       \
 		}							       \
 		/* Asserts only if not working on ena_wait_event_t */	       \
@@ -182,15 +183,15 @@ typedef struct {
 			ena_trc_err(NULL,				       \
 				"Timeout waiting for " #waitevent "\n");       \
 		_we->flag = 0;						       \
-		pthread_mutex_unlock(&_we->mutex);			       \
+		real_pthread_mutex_unlock(&_we->mutex);			       \
 	} while (0)
 #define ENA_WAIT_EVENT_SIGNAL(waitevent)				       \
 	do {								       \
 		ena_wait_event_t *_we = &(waitevent);			       \
-		pthread_mutex_lock(&_we->mutex);			       \
+		real_pthread_mutex_lock(&_we->mutex);			       \
 		_we->flag = 1;						       \
-		pthread_cond_signal(&_we->cond);			       \
-		pthread_mutex_unlock(&_we->mutex);			       \
+		real_pthread_cond_signal(&_we->cond);			       \
+		real_pthread_mutex_unlock(&_we->mutex);			       \
 	} while (0)
 /* pthread condition doesn't need to be rearmed after usage */
 #define ENA_WAIT_EVENT_CLEAR(...)

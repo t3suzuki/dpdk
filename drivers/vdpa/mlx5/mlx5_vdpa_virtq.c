@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright 2019 Mellanox Technologies, Ltd
  */
@@ -24,15 +25,15 @@ mlx5_vdpa_virtq_kick_handler(void *cb_arg)
 	int nbytes;
 	int retry;
 
-	pthread_mutex_lock(&virtq->virtq_lock);
+	real_pthread_mutex_lock(&virtq->virtq_lock);
 	if (priv->state != MLX5_VDPA_STATE_CONFIGURED && !virtq->enable) {
-		pthread_mutex_unlock(&virtq->virtq_lock);
+		real_pthread_mutex_unlock(&virtq->virtq_lock);
 		DRV_LOG(ERR,  "device %d queue %d down, skip kick handling",
 			priv->vid, virtq->index);
 		return;
 	}
 	if (rte_intr_fd_get(virtq->intr_handle) < 0) {
-		pthread_mutex_unlock(&virtq->virtq_lock);
+		real_pthread_mutex_unlock(&virtq->virtq_lock);
 		return;
 	}
 	for (retry = 0; retry < 3; ++retry) {
@@ -49,13 +50,13 @@ mlx5_vdpa_virtq_kick_handler(void *cb_arg)
 		break;
 	}
 	if (nbytes < 0) {
-		pthread_mutex_unlock(&virtq->virtq_lock);
+		real_pthread_mutex_unlock(&virtq->virtq_lock);
 		return;
 	}
 	rte_spinlock_lock(&priv->db_lock);
 	rte_write32(virtq->index, priv->virtq_db_addr);
 	rte_spinlock_unlock(&priv->db_lock);
-	pthread_mutex_unlock(&virtq->virtq_lock);
+	real_pthread_mutex_unlock(&virtq->virtq_lock);
 	if (priv->state != MLX5_VDPA_STATE_CONFIGURED && !virtq->enable) {
 		DRV_LOG(ERR,  "device %d queue %d down, skip kick handling.",
 			priv->vid, virtq->index);
@@ -91,9 +92,9 @@ mlx5_vdpa_virtq_unregister_intr_handle(struct mlx5_vdpa_virtq *virtq)
 				DRV_LOG(DEBUG, "Try again to unregister fd %d of virtq %hu interrupt",
 					rte_intr_fd_get(virtq->intr_handle),
 					virtq->index);
-				pthread_mutex_unlock(&virtq->virtq_lock);
+				real_pthread_mutex_unlock(&virtq->virtq_lock);
 				usleep(MLX5_VDPA_INTR_RETRIES_USEC);
-				pthread_mutex_lock(&virtq->virtq_lock);
+				real_pthread_mutex_lock(&virtq->virtq_lock);
 			}
 		}
 		(void)rte_intr_fd_set(virtq->intr_handle, -1);
@@ -110,9 +111,9 @@ mlx5_vdpa_virtq_unreg_intr_handle_all(struct mlx5_vdpa_priv *priv)
 
 	for (i = 0; i < priv->nr_virtqs; i++) {
 		virtq = &priv->virtqs[i];
-		pthread_mutex_lock(&virtq->virtq_lock);
+		real_pthread_mutex_lock(&virtq->virtq_lock);
 		mlx5_vdpa_virtq_unregister_intr_handle(virtq);
-		pthread_mutex_unlock(&virtq->virtq_lock);
+		real_pthread_mutex_unlock(&virtq->virtq_lock);
 	}
 }
 
@@ -136,7 +137,7 @@ mlx5_vdpa_virtqs_cleanup(struct mlx5_vdpa_priv *priv)
 	for (i = 0; i < priv->caps.max_num_virtio_queues; i++) {
 		struct mlx5_vdpa_virtq *virtq = &priv->virtqs[i];
 
-		pthread_mutex_lock(&virtq->virtq_lock);
+		real_pthread_mutex_lock(&virtq->virtq_lock);
 		if (virtq->virtq)
 			mlx5_vdpa_vq_destroy(virtq);
 		for (j = 0; j < RTE_DIM(virtq->umems); ++j) {
@@ -153,7 +154,7 @@ mlx5_vdpa_virtqs_cleanup(struct mlx5_vdpa_priv *priv)
 		}
 		if (virtq->eqp.fw_qp)
 			mlx5_vdpa_event_qp_destroy(&virtq->eqp);
-		pthread_mutex_unlock(&virtq->virtq_lock);
+		real_pthread_mutex_unlock(&virtq->virtq_lock);
 	}
 }
 
@@ -187,13 +188,13 @@ mlx5_vdpa_virtqs_release(struct mlx5_vdpa_priv *priv,
 		(valid_vq_num) : priv->nr_virtqs;
 	for (i = 0; i < max_virtq; i++) {
 		virtq = &priv->virtqs[i];
-		pthread_mutex_lock(&virtq->virtq_lock);
+		real_pthread_mutex_lock(&virtq->virtq_lock);
 		mlx5_vdpa_virtq_unset(virtq);
 		virtq->enable = 0;
 		if (!release_resource && i < valid_vq_num)
 			mlx5_vdpa_virtq_single_resource_prepare(
 					priv, i);
-		pthread_mutex_unlock(&virtq->virtq_lock);
+		real_pthread_mutex_unlock(&virtq->virtq_lock);
 	}
 	if (!release_resource && priv->queues &&
 		mlx5_vdpa_is_modify_virtq_supported(priv))
@@ -728,14 +729,14 @@ mlx5_vdpa_virtqs_prepare(struct mlx5_vdpa_priv *priv)
 		}
 		for (i = 0; i < task_num; i++) {
 			virtq = &priv->virtqs[main_task_idx[i]];
-			pthread_mutex_lock(&virtq->virtq_lock);
+			real_pthread_mutex_lock(&virtq->virtq_lock);
 			if (mlx5_vdpa_virtq_setup(priv,
 				main_task_idx[i], false)) {
-				pthread_mutex_unlock(&virtq->virtq_lock);
+				real_pthread_mutex_unlock(&virtq->virtq_lock);
 				goto error;
 			}
 			virtq->enable = 1;
-			pthread_mutex_unlock(&virtq->virtq_lock);
+			real_pthread_mutex_unlock(&virtq->virtq_lock);
 		}
 		if (mlx5_vdpa_c_thread_wait_bulk_tasks_done(&remaining_cnt,
 			&err_cnt, 2000)) {
@@ -746,22 +747,22 @@ mlx5_vdpa_virtqs_prepare(struct mlx5_vdpa_priv *priv)
 		for (i = 0; i < nr_vring; i++) {
 			/* Setup doorbell mapping in order for Qume. */
 			virtq = &priv->virtqs[i];
-			pthread_mutex_lock(&virtq->virtq_lock);
+			real_pthread_mutex_lock(&virtq->virtq_lock);
 			if (!virtq->enable || !virtq->configured) {
-				pthread_mutex_unlock(&virtq->virtq_lock);
+				real_pthread_mutex_unlock(&virtq->virtq_lock);
 				continue;
 			}
 			if (rte_vhost_get_vhost_vring(priv->vid, i, &vq)) {
-				pthread_mutex_unlock(&virtq->virtq_lock);
+				real_pthread_mutex_unlock(&virtq->virtq_lock);
 				goto error;
 			}
 			if (mlx5_vdpa_virtq_doorbell_setup(virtq, &vq, i)) {
-				pthread_mutex_unlock(&virtq->virtq_lock);
+				real_pthread_mutex_unlock(&virtq->virtq_lock);
 				DRV_LOG(ERR,
 				"Failed to register virtq %d interrupt.", i);
 				goto error;
 			}
-			pthread_mutex_unlock(&virtq->virtq_lock);
+			real_pthread_mutex_unlock(&virtq->virtq_lock);
 		}
 	} else {
 		for (i = 0; i < nr_vring; i++) {
@@ -779,14 +780,14 @@ mlx5_vdpa_virtqs_prepare(struct mlx5_vdpa_priv *priv)
 						continue;
 				}
 			}
-			pthread_mutex_lock(&virtq->virtq_lock);
+			real_pthread_mutex_lock(&virtq->virtq_lock);
 			if (mlx5_vdpa_virtq_setup(priv, i, true)) {
-				pthread_mutex_unlock(
+				real_pthread_mutex_unlock(
 						&virtq->virtq_lock);
 				goto error;
 			}
 			virtq->enable = 1;
-			pthread_mutex_unlock(&virtq->virtq_lock);
+			real_pthread_mutex_unlock(&virtq->virtq_lock);
 		}
 	}
 	return 0;

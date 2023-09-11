@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright 2021 Mellanox Technologies, Ltd
  */
@@ -878,9 +879,9 @@ mlx5_compress_dev_probe(struct mlx5_common_device *cdev,
 		rte_compressdev_pmd_destroy(priv->compressdev);
 		return -1;
 	}
-	pthread_mutex_lock(&priv_list_lock);
+	real_pthread_mutex_lock(&priv_list_lock);
 	TAILQ_INSERT_TAIL(&mlx5_compress_priv_list, priv, next);
-	pthread_mutex_unlock(&priv_list_lock);
+	real_pthread_mutex_unlock(&priv_list_lock);
 	return 0;
 }
 
@@ -889,13 +890,13 @@ mlx5_compress_dev_remove(struct mlx5_common_device *cdev)
 {
 	struct mlx5_compress_priv *priv = NULL;
 
-	pthread_mutex_lock(&priv_list_lock);
+	real_pthread_mutex_lock(&priv_list_lock);
 	TAILQ_FOREACH(priv, &mlx5_compress_priv_list, next)
 		if (priv->compressdev->device == cdev->dev)
 			break;
 	if (priv)
 		TAILQ_REMOVE(&mlx5_compress_priv_list, priv, next);
-	pthread_mutex_unlock(&priv_list_lock);
+	real_pthread_mutex_unlock(&priv_list_lock);
 	if (priv) {
 		mlx5_devx_uar_release(&priv->uar);
 		rte_compressdev_pmd_destroy(priv->compressdev);

@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2010-2018 Intel Corporation
  */
@@ -1199,13 +1200,13 @@ static int fme_nios_spi_init(struct ifpga_feature *feature)
 	 * release the SPI master to Host
 	 */
 	if (spi_master->mutex)
-		pthread_mutex_lock(spi_master->mutex);
+		real_pthread_mutex_lock(spi_master->mutex);
 
 	ret = nios_spi_wait_init_done(spi_master);
 	if (ret != 0) {
 		dev_err(fme, "FME NIOS_SPI init fail\n");
 		if (spi_master->mutex)
-			pthread_mutex_unlock(spi_master->mutex);
+			real_pthread_mutex_unlock(spi_master->mutex);
 		goto release_dev;
 	}
 
@@ -1216,7 +1217,7 @@ static int fme_nios_spi_init(struct ifpga_feature *feature)
 		dev_info(fme, "NIOS_SPI INIT done, but found some error\n");
 
 	if (spi_master->mutex)
-		pthread_mutex_unlock(spi_master->mutex);
+		real_pthread_mutex_unlock(spi_master->mutex);
 
 	/* 3. init the spi master*/
 	altera_spi_init(spi_master);

@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2010-2014 Intel Corporation
  */
@@ -226,7 +227,7 @@ eal_thread_loop(void *arg)
 }
 
 enum __rte_ctrl_thread_status {
-	CTRL_THREAD_LAUNCHING, /* Yet to call pthread_create function */
+	CTRL_THREAD_LAUNCHING, /* Yet to call real_pthread_create function */
 	CTRL_THREAD_RUNNING, /* Control thread is running successfully */
 	CTRL_THREAD_ERROR /* Control thread encountered an error */
 };
@@ -307,7 +308,7 @@ rte_ctrl_thread_create(pthread_t *thread, const char *name,
 	params->ret = 0;
 	params->ctrl_thread_status = CTRL_THREAD_LAUNCHING;
 
-	ret = pthread_create(thread, attr, ctrl_thread_start, (void *)params);
+	ret = real_pthread_create(thread, attr, ctrl_thread_start, (void *)params);
 	if (ret != 0) {
 		free(params);
 		return -ret;
@@ -330,7 +331,7 @@ rte_ctrl_thread_create(pthread_t *thread, const char *name,
 	/* Check if the control thread encountered an error */
 	if (ctrl_thread_status == CTRL_THREAD_ERROR) {
 		/* ctrl thread is exiting */
-		pthread_join(*thread, NULL);
+		real_pthread_join(*thread, NULL);
 	}
 
 	ret = params->ret;

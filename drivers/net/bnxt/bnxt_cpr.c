@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2014-2021 Broadcom
  * All rights reserved.
@@ -184,7 +185,7 @@ void bnxt_handle_async_event(struct bnxt *bp,
 					     RTE_ETH_EVENT_ERR_RECOVERING,
 					     NULL);
 
-		pthread_mutex_lock(&bp->err_recovery_lock);
+		real_pthread_mutex_lock(&bp->err_recovery_lock);
 		event_data = data1;
 		/* timestamp_lo/hi values are in units of 100ms */
 		bp->fw_reset_max_msecs = async_cmp->timestamp_hi ?
@@ -206,7 +207,7 @@ void bnxt_handle_async_event(struct bnxt *bp,
 		}
 
 		bp->flags |= BNXT_FLAG_FW_RESET;
-		pthread_mutex_unlock(&bp->err_recovery_lock);
+		real_pthread_mutex_unlock(&bp->err_recovery_lock);
 		rte_eal_alarm_set(US_PER_MS, bnxt_dev_reset_and_resume,
 				  (void *)bp);
 		break;

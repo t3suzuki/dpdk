@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2017 Intel Corporation
  */
@@ -190,7 +191,7 @@ eth_kni_dev_stop(struct rte_eth_dev *dev)
 		if (ret)
 			PMD_LOG(ERR, "Can't cancel the thread");
 
-		ret = pthread_join(internals->thread, NULL);
+		ret = real_pthread_join(internals->thread, NULL);
 		if (ret)
 			PMD_LOG(ERR, "Can't join the thread");
 	}

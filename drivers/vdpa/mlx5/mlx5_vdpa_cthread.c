@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright (c) 2022 NVIDIA Corporation & Affiliates
  */
@@ -73,9 +74,9 @@ mlx5_vdpa_task_add(struct mlx5_vdpa_priv *priv,
 			__atomic_fetch_add(task[i].remaining_cnt, 1,
 				__ATOMIC_RELAXED);
 	/* wake up conf thread. */
-	pthread_mutex_lock(&conf_thread_mng.cthrd_lock);
-	pthread_cond_signal(&conf_thread_mng.cthrd[thrd_idx].c_cond);
-	pthread_mutex_unlock(&conf_thread_mng.cthrd_lock);
+	real_pthread_mutex_lock(&conf_thread_mng.cthrd_lock);
+	real_pthread_cond_signal(&conf_thread_mng.cthrd[thrd_idx].c_cond);
+	real_pthread_mutex_unlock(&conf_thread_mng.cthrd_lock);
 	return 0;
 }
 
@@ -122,11 +123,11 @@ mlx5_vdpa_c_thread_handle(void *arg)
 			(void **)&task, 1, NULL);
 		if (!task_num) {
 			/* No task and condition wait. */
-			pthread_mutex_lock(&multhrd->cthrd_lock);
-			pthread_cond_wait(
+			real_pthread_mutex_lock(&multhrd->cthrd_lock);
+			real_pthread_cond_wait(
 				&multhrd->cthrd[thrd_idx].c_cond,
 				&multhrd->cthrd_lock);
-			pthread_mutex_unlock(&multhrd->cthrd_lock);
+			real_pthread_mutex_unlock(&multhrd->cthrd_lock);
 			continue;
 		}
 		priv = task.priv;
@@ -144,7 +145,7 @@ mlx5_vdpa_c_thread_handle(void *arg)
 			break;
 		case MLX5_VDPA_TASK_SETUP_VIRTQ:
 			virtq = &priv->virtqs[task.idx];
-			pthread_mutex_lock(&virtq->virtq_lock);
+			real_pthread_mutex_lock(&virtq->virtq_lock);
 			ret = mlx5_vdpa_virtq_setup(priv,
 				task.idx, false);
 			if (ret) {
@@ -154,11 +155,11 @@ mlx5_vdpa_c_thread_handle(void *arg)
 					task.err_cnt, 1, __ATOMIC_RELAXED);
 			}
 			virtq->enable = 1;
-			pthread_mutex_unlock(&virtq->virtq_lock);
+			real_pthread_mutex_unlock(&virtq->virtq_lock);
 			break;
 		case MLX5_VDPA_TASK_STOP_VIRTQ:
 			virtq = &priv->virtqs[task.idx];
-			pthread_mutex_lock(&virtq->virtq_lock);
+			real_pthread_mutex_lock(&virtq->virtq_lock);
 			ret = mlx5_vdpa_virtq_stop(priv,
 					task.idx);
 			if (ret) {
@@ -168,7 +169,7 @@ mlx5_vdpa_c_thread_handle(void *arg)
 				__atomic_fetch_add(
 					task.err_cnt, 1,
 					__ATOMIC_RELAXED);
-				pthread_mutex_unlock(&virtq->virtq_lock);
+				real_pthread_mutex_unlock(&virtq->virtq_lock);
 				break;
 			}
 			ret = rte_vhost_get_negotiated_features(
@@ -180,20 +181,20 @@ mlx5_vdpa_c_thread_handle(void *arg)
 				__atomic_fetch_add(
 					task.err_cnt, 1,
 					__ATOMIC_RELAXED);
-				pthread_mutex_unlock(&virtq->virtq_lock);
+				real_pthread_mutex_unlock(&virtq->virtq_lock);
 				break;
 			}
 			if (RTE_VHOST_NEED_LOG(features))
 				rte_vhost_log_used_vring(
 				priv->vid, task.idx, 0,
 			    MLX5_VDPA_USED_RING_LEN(virtq->vq_size));
-			pthread_mutex_unlock(&virtq->virtq_lock);
+			real_pthread_mutex_unlock(&virtq->virtq_lock);
 			break;
 		case MLX5_VDPA_TASK_DEV_CLOSE_NOWAIT:
 			mlx5_vdpa_virtq_unreg_intr_handle_all(priv);
-			pthread_mutex_lock(&priv->steer_update_lock);
+			real_pthread_mutex_lock(&priv->steer_update_lock);
 			mlx5_vdpa_steer_unset(priv);
-			pthread_mutex_unlock(&priv->steer_update_lock);
+			real_pthread_mutex_unlock(&priv->steer_update_lock);
 			mlx5_vdpa_virtqs_release(priv, false);
 			mlx5_vdpa_drain_cq(priv);
 			if (priv->lm_mr.addr)
@@ -235,10 +236,10 @@ mlx5_vdpa_c_thread_destroy(uint32_t thrd_idx, bool need_unlock)
 {
 	if (conf_thread_mng.cthrd[thrd_idx].tid) {
 		pthread_cancel(conf_thread_mng.cthrd[thrd_idx].tid);
-		pthread_join(conf_thread_mng.cthrd[thrd_idx].tid, NULL);
+		real_pthread_join(conf_thread_mng.cthrd[thrd_idx].tid, NULL);
 		conf_thread_mng.cthrd[thrd_idx].tid = 0;
 		if (need_unlock)
-			pthread_mutex_init(&conf_thread_mng.cthrd_lock, NULL);
+			real_pthread_mutex_init(&conf_thread_mng.cthrd_lock, NULL);
 	}
 	if (conf_thread_mng.cthrd[thrd_idx].rng) {
 		rte_ring_free(conf_thread_mng.cthrd[thrd_idx].rng);
@@ -259,7 +260,7 @@ mlx5_vdpa_c_thread_create(int cpu_core)
 	char name[32];
 	int ret;
 
-	pthread_mutex_lock(&conf_thread_mng.cthrd_lock);
+	real_pthread_mutex_lock(&conf_thread_mng.cthrd_lock);
 	pthread_attr_init(&attr);
 	ret = pthread_attr_setschedpolicy(&attr, SCHED_RR);
 	if (ret) {
@@ -291,7 +292,7 @@ mlx5_vdpa_c_thread_create(int cpu_core)
 			thrd_idx);
 			goto c_thread_err;
 		}
-		ret = pthread_create(&conf_thread_mng.cthrd[thrd_idx].tid,
+		ret = real_pthread_create(&conf_thread_mng.cthrd[thrd_idx].tid,
 				&attr, mlx5_vdpa_c_thread_handle,
 				(void *)&conf_thread_mng);
 		if (ret) {
@@ -320,23 +321,23 @@ mlx5_vdpa_c_thread_create(int cpu_core)
 					name);
 		else
 			DRV_LOG(DEBUG, "Thread name: %s.", name);
-		pthread_cond_init(&conf_thread_mng.cthrd[thrd_idx].c_cond,
+		real_pthread_cond_init(&conf_thread_mng.cthrd[thrd_idx].c_cond,
 			NULL);
 	}
-	pthread_mutex_unlock(&conf_thread_mng.cthrd_lock);
+	real_pthread_mutex_unlock(&conf_thread_mng.cthrd_lock);
 	return 0;
 c_thread_err:
 	for (thrd_idx = 0; thrd_idx < conf_thread_mng.max_thrds;
 		thrd_idx++)
 		mlx5_vdpa_c_thread_destroy(thrd_idx, false);
-	pthread_mutex_unlock(&conf_thread_mng.cthrd_lock);
+	real_pthread_mutex_unlock(&conf_thread_mng.cthrd_lock);
 	return -1;
 }
 
 int
 mlx5_vdpa_mult_threads_create(int cpu_core)
 {
-	pthread_mutex_init(&conf_thread_mng.cthrd_lock, NULL);
+	real_pthread_mutex_init(&conf_thread_mng.cthrd_lock, NULL);
 	if (mlx5_vdpa_c_thread_create(cpu_core)) {
 		DRV_LOG(ERR, "Cannot create vDPA configuration threads.");
 		mlx5_vdpa_mult_threads_destroy(false);
@@ -355,6 +356,6 @@ mlx5_vdpa_mult_threads_destroy(bool need_unlock)
 	for (thrd_idx = 0; thrd_idx < conf_thread_mng.max_thrds;
 		thrd_idx++)
 		mlx5_vdpa_c_thread_destroy(thrd_idx, need_unlock);
-	pthread_mutex_destroy(&conf_thread_mng.cthrd_lock);
+	real_pthread_mutex_destroy(&conf_thread_mng.cthrd_lock);
 	memset(&conf_thread_mng, 0, sizeof(struct mlx5_vdpa_conf_thread_mng));
 }

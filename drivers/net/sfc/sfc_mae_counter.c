@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  *
  * Copyright(c) 2020-2021 Xilinx, Inc.
@@ -636,7 +637,7 @@ sfc_mae_counter_thread_stop(struct sfc_adapter *sa)
 	__atomic_store_n(&counter_registry->polling.thread.run, false,
 			 __ATOMIC_RELEASE);
 
-	rc = pthread_join(counter_registry->polling.thread.id, NULL);
+	rc = real_pthread_join(counter_registry->polling.thread.id, NULL);
 	if (rc != 0)
 		sfc_err(sa, "failed to join the MAE counter polling thread");
 

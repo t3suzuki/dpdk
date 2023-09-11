@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /*   SPDX-License-Identifier: BSD-3-Clause
  *   Copyright(c) 2018 Advanced Micro Devices, Inc. All rights reserved.
  *   Copyright(c) 2018 Synopsys, Inc. All rights reserved.
@@ -404,7 +405,7 @@ static void axgbe_phy_put_comm_ownership(struct axgbe_port *pdata)
 
 	phy_data->comm_owned = 0;
 
-	pthread_mutex_unlock(&pdata->phy_mutex);
+	real_pthread_mutex_unlock(&pdata->phy_mutex);
 }
 
 static int axgbe_phy_get_comm_ownership(struct axgbe_port *pdata)
@@ -417,7 +418,7 @@ static int axgbe_phy_get_comm_ownership(struct axgbe_port *pdata)
 	 * the driver needs to take the software mutex and then the hardware
 	 * mutexes before being able to use the busses.
 	 */
-	pthread_mutex_lock(&pdata->phy_mutex);
+	real_pthread_mutex_lock(&pdata->phy_mutex);
 
 	if (phy_data->comm_owned)
 		return 0;
@@ -448,7 +449,7 @@ static int axgbe_phy_get_comm_ownership(struct axgbe_port *pdata)
 		return 0;
 	}
 
-	pthread_mutex_unlock(&pdata->phy_mutex);
+	real_pthread_mutex_unlock(&pdata->phy_mutex);
 
 	PMD_DRV_LOG(ERR, "unable to obtain hardware mutexes\n");
 

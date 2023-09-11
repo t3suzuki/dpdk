@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /*   SPDX-License-Identifier: BSD-3-Clause
  *   Copyright(c) 2018 Advanced Micro Devices, Inc. All rights reserved.
  *   Copyright(c) 2018 Synopsys, Inc. All rights reserved.
@@ -167,12 +168,12 @@ static int axgbe_read_mmd_regs_v2(struct axgbe_port *pdata,
 	index = mmd_address & ~pdata->xpcs_window_mask;
 	offset = pdata->xpcs_window + (mmd_address & pdata->xpcs_window_mask);
 
-	pthread_mutex_lock(&pdata->xpcs_mutex);
+	real_pthread_mutex_lock(&pdata->xpcs_mutex);
 
 	XPCS32_IOWRITE(pdata, pdata->xpcs_window_sel_reg, index);
 	mmd_data = XPCS16_IOREAD(pdata, offset);
 
-	pthread_mutex_unlock(&pdata->xpcs_mutex);
+	real_pthread_mutex_unlock(&pdata->xpcs_mutex);
 
 	return mmd_data;
 }
@@ -201,12 +202,12 @@ static void axgbe_write_mmd_regs_v2(struct axgbe_port *pdata,
 	index = mmd_address & ~pdata->xpcs_window_mask;
 	offset = pdata->xpcs_window + (mmd_address & pdata->xpcs_window_mask);
 
-	pthread_mutex_lock(&pdata->xpcs_mutex);
+	real_pthread_mutex_lock(&pdata->xpcs_mutex);
 
 	XPCS32_IOWRITE(pdata, pdata->xpcs_window_sel_reg, index);
 	XPCS16_IOWRITE(pdata, offset, mmd_data);
 
-	pthread_mutex_unlock(&pdata->xpcs_mutex);
+	real_pthread_mutex_unlock(&pdata->xpcs_mutex);
 }
 
 static int axgbe_read_mmd_regs(struct axgbe_port *pdata, int prtad,

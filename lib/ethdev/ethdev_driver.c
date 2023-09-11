@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2022 Intel Corporation
  */
@@ -110,7 +111,7 @@ rte_eth_dev_allocate(const char *name)
 	eth_dev->data->port_id = port_id;
 	eth_dev->data->backer_port_id = RTE_MAX_ETHPORTS;
 	eth_dev->data->mtu = RTE_ETHER_MTU;
-	pthread_mutex_init(&eth_dev->data->flow_ops_mutex, NULL);
+	real_pthread_mutex_init(&eth_dev->data->flow_ops_mutex, NULL);
 
 unlock:
 	rte_spinlock_unlock(&eth_dev_shared_data->ownership_lock);
@@ -247,7 +248,7 @@ rte_eth_dev_release_port(struct rte_eth_dev *eth_dev)
 		rte_free(eth_dev->data->mac_addrs);
 		rte_free(eth_dev->data->hash_mac_addrs);
 		rte_free(eth_dev->data->dev_private);
-		pthread_mutex_destroy(&eth_dev->data->flow_ops_mutex);
+		real_pthread_mutex_destroy(&eth_dev->data->flow_ops_mutex);
 		memset(eth_dev->data, 0, sizeof(struct rte_eth_dev_data));
 	}
 

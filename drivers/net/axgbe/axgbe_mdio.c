@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /*   SPDX-License-Identifier: BSD-3-Clause
  *   Copyright(c) 2018 Advanced Micro Devices, Inc. All rights reserved.
  *   Copyright(c) 2018 Synopsys, Inc. All rights reserved.
@@ -654,9 +655,9 @@ static void axgbe_an73_isr(struct axgbe_port *pdata)
 	if (pdata->an_int) {
 		/* Clear the interrupt(s) that fired and process them */
 		XMDIO_WRITE(pdata, MDIO_MMD_AN, MDIO_AN_INT, ~pdata->an_int);
-		pthread_mutex_lock(&pdata->an_mutex);
+		real_pthread_mutex_lock(&pdata->an_mutex);
 		axgbe_an73_state_machine(pdata);
-		pthread_mutex_unlock(&pdata->an_mutex);
+		real_pthread_mutex_unlock(&pdata->an_mutex);
 	} else {
 		/* Enable AN interrupts */
 		axgbe_an73_enable_interrupts(pdata);
@@ -945,7 +946,7 @@ static int axgbe_phy_config_aneg(struct axgbe_port *pdata)
 {
 	int ret;
 
-	pthread_mutex_lock(&pdata->an_mutex);
+	real_pthread_mutex_lock(&pdata->an_mutex);
 
 	ret = __axgbe_phy_config_aneg(pdata);
 	if (ret)
@@ -953,7 +954,7 @@ static int axgbe_phy_config_aneg(struct axgbe_port *pdata)
 	else
 		rte_bit_relaxed_clear32(AXGBE_LINK_ERR, &pdata->dev_state);
 
-	pthread_mutex_unlock(&pdata->an_mutex);
+	real_pthread_mutex_unlock(&pdata->an_mutex);
 
 	return ret;
 }

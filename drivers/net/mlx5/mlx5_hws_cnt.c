@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright 2020 Mellanox Technologies, Ltd
  */
@@ -447,7 +448,7 @@ mlx5_hws_cnt_service_thread_create(struct mlx5_dev_ctx_shared *sh)
 
 	CPU_ZERO(&cpuset);
 	sh->cnt_svc->svc_running = 1;
-	ret = pthread_create(&sh->cnt_svc->service_thread, NULL,
+	ret = real_pthread_create(&sh->cnt_svc->service_thread, NULL,
 			mlx5_hws_cnt_svc, sh);
 	if (ret != 0) {
 		DRV_LOG(ERR, "Failed to create HW steering's counter service thread.");
@@ -469,7 +470,7 @@ mlx5_hws_cnt_service_thread_destroy(struct mlx5_dev_ctx_shared *sh)
 	if (sh->cnt_svc->service_thread == 0)
 		return;
 	sh->cnt_svc->svc_running = 0;
-	pthread_join(sh->cnt_svc->service_thread, NULL);
+	real_pthread_join(sh->cnt_svc->service_thread, NULL);
 	sh->cnt_svc->service_thread = 0;
 }
 

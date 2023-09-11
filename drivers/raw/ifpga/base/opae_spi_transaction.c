@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2010-2019 Intel Corporation
  */
@@ -467,11 +468,11 @@ int spi_transaction_read(struct spi_transaction_dev *dev, unsigned int addr,
 {
 	int ret;
 
-	pthread_mutex_lock(dev->mutex);
+	real_pthread_mutex_lock(dev->mutex);
 	ret = do_transaction(dev, addr, size, data,
 			(size > SPI_REG_BYTES) ?
 			SPI_TRAN_SEQ_READ : SPI_TRAN_NON_SEQ_READ);
-	pthread_mutex_unlock(dev->mutex);
+	real_pthread_mutex_unlock(dev->mutex);
 
 	return ret;
 }
@@ -481,11 +482,11 @@ int spi_transaction_write(struct spi_transaction_dev *dev, unsigned int addr,
 {
 	int ret;
 
-	pthread_mutex_lock(dev->mutex);
+	real_pthread_mutex_lock(dev->mutex);
 	ret = do_transaction(dev, addr, size, data,
 			(size > SPI_REG_BYTES) ?
 			SPI_TRAN_SEQ_WRITE : SPI_TRAN_NON_SEQ_WRITE);
-	pthread_mutex_unlock(dev->mutex);
+	real_pthread_mutex_unlock(dev->mutex);
 
 	return ret;
 }
@@ -507,7 +508,7 @@ struct spi_transaction_dev *spi_transaction_init(struct altera_spi_device *dev,
 	if (!spi_tran_dev->buffer)
 		goto err;
 
-	ret = pthread_mutex_init(&spi_tran_dev->lock, NULL);
+	ret = real_pthread_mutex_init(&spi_tran_dev->lock, NULL);
 	if (ret) {
 		dev_err(spi_tran_dev, "fail to init mutex lock\n");
 		goto err;
@@ -532,7 +533,7 @@ void spi_transaction_remove(struct spi_transaction_dev *dev)
 	if (dev && dev->buffer)
 		opae_free(dev->buffer);
 	if (dev) {
-		pthread_mutex_destroy(&dev->lock);
+		real_pthread_mutex_destroy(&dev->lock);
 		opae_free(dev);
 	}
 }

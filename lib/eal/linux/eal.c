@@ -1,3 +1,4 @@
+#include "real_pthread.h"
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright(c) 2010-2018 Intel Corporation.
  * Copyright(c) 2012-2014 6WIND S.A.
@@ -949,7 +950,7 @@ eal_worker_thread_create(unsigned int lcore_id)
 		}
 	}
 
-	if (pthread_create((pthread_t *)&lcore_config[lcore_id].thread_id.opaque_id,
+	if (real_pthread_create((pthread_t *)&lcore_config[lcore_id].thread_id.opaque_id,
 			attrp, eal_worker_thread_loop, (void *)(uintptr_t)lcore_id) == 0)
 		ret = 0;
 
